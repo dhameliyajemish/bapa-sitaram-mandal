@@ -6,6 +6,7 @@ const entrySchema = mongoose.Schema({
   hapto: { type: Number, default: 0 },
   upad: { type: Number, default: 0 },
   vyaj: { type: Number, default: 0 },
+  creditVyaj: { type: Number, default: 0 },
   dand: { type: Number, default: 0 },
   total: { type: Number, default: 0 }
 }, {

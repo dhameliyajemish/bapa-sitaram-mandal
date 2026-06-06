@@ -6,8 +6,8 @@ const getEntries = async (req, res) => {
 };
 
 const createEntry = async (req, res) => {
-  const { memberId, month, hapto, upad, vyaj, dand } = req.body;
-  const entry = await MonthlyEntry.create({ memberId, month, hapto, upad, vyaj, dand });
+  const { memberId, month, hapto, upad, vyaj, creditVyaj, dand } = req.body;
+  const entry = await MonthlyEntry.create({ memberId, month, hapto, upad, vyaj, creditVyaj, dand });
   const populatedEntry = await MonthlyEntry.findById(entry._id).populate('memberId', 'name mobile fataNo email');
   res.status(201).json(populatedEntry);
 };

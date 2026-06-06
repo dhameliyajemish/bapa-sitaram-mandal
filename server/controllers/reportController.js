@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Member = require("../models/Member");
 const MonthlyEntry = require("../models/MonthlyEntry");
 const Loan = require("../models/Loan");
+const Setting = require("../models/Setting");
 
 const fmtMoney = n => "?" + Number(n || 0).toFixed(2);
 const pad = (s, len) => s.padStart(len, " ");
@@ -11,7 +12,7 @@ const monthLabel = m => {
   return M[+mo - 1] + " " + yr;
 };
 
-const calculateChronologicalBalance = (mEntries, targetMonth, openingBalance = 0) => {
+const calculateChronologicalBalance = (mEntries, targetMonth, openingBalance = 0, creditInterestRate = 1, debitInterestRate = 1) => {
   if ((!mEntries || mEntries.length === 0) && !openingBalance) return 0;
 
   // Sort entries by month ascending
@@ -33,11 +34,20 @@ const calculateChronologicalBalance = (mEntries, targetMonth, openingBalance = 0
   let currentMonth = minMonth;
 
   while (currentMonth.localeCompare(targetMonth) <= 0) {
-    balance = balance * 1.01;
     const mMonthEntries = entryMap[currentMonth] || [];
+    const hasExplicitCreditVyaj = mMonthEntries.some(e => Number(e.creditVyaj || 0) > 0);
+
+    if (balance > 0) {
+      if (!hasExplicitCreditVyaj) {
+        balance = balance * (1 + creditInterestRate / 100);
+      }
+    } else if (balance < 0) {
+      balance = balance * (1 + debitInterestRate / 100);
+    }
+
     let net = 0;
     mMonthEntries.forEach(e => {
-      net += Number(e.hapto || 0) - Number(e.upad || 0) + Number(e.vyaj || 0) + Number(e.dand || 0);
+      net += Number(e.hapto || 0) - Number(e.upad || 0) + Number(e.vyaj || 0) + Number(e.creditVyaj || 0) + Number(e.dand || 0);
     });
     balance += net;
 
@@ -59,10 +69,14 @@ const getMonthlyReport = async (req, res) => {
     const { month } = req.query;
     if (!month) return res.status(400).json({ message: "Month is required" });
 
-    const [members, entries] = await Promise.all([
+    const [members, entries, settings] = await Promise.all([
       Member.find({}),
-      MonthlyEntry.find({ month }).populate("memberId", "name fataNo")
+      MonthlyEntry.find({ month }).populate("memberId", "name fataNo"),
+      Setting.findOne()
     ]);
+
+    const creditRate = settings ? settings.creditInterestRate : 1;
+    const debitRate = settings ? settings.debitInterestRate : 1;
 
     const memberMap = {};
     members.forEach(m => { memberMap[m._id] = m; });
@@ -86,8 +100,20 @@ const getMonthlyReport = async (req, res) => {
       tVyaj  += Number(e.vyaj  || 0);
       tDand  += Number(e.dand  || 0);
       
-      const balance = calculateChronologicalBalance(entriesByMember[memberIdStr], month, Number(m.openingBalance || 0));
+      const balance = calculateChronologicalBalance(entriesByMember[memberIdStr], month, Number(m.openingBalance || 0), creditRate, debitRate);
       return { ...e.toObject(), member: m, balance: Math.round(balance * 100) / 100 };
+    });
+
+    // Sort rows numerically by member fataNo
+    rows.sort((a, b) => {
+      const fataA = a.member?.fataNo || '';
+      const fataB = b.member?.fataNo || '';
+      const numA = parseInt(fataA, 10);
+      const numB = parseInt(fataB, 10);
+      if (isNaN(numA) && isNaN(numB)) return fataA.localeCompare(fataB);
+      if (isNaN(numA)) return 1;
+      if (isNaN(numB)) return -1;
+      return numA - numB;
     });
 
     res.json({
@@ -148,8 +174,14 @@ const getMemberLedger = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(memberId))
       return res.status(400).json({ message: "Invalid member ID" });
 
-    const member = await Member.findById(memberId);
+    const [member, settings] = await Promise.all([
+      Member.findById(memberId),
+      Setting.findOne()
+    ]);
     if (!member) return res.status(404).json({ message: "Member not found" });
+
+    const creditRate = settings ? settings.creditInterestRate : 1;
+    const debitRate = settings ? settings.debitInterestRate : 1;
 
     const entries = await MonthlyEntry.find({ memberId }).sort({ month: 1 });
 
@@ -160,7 +192,7 @@ const getMemberLedger = async (req, res) => {
       totalV += Number(e.vyaj  || 0);
       totalD += Number(e.dand  || 0);
       
-      const runningBalance = calculateChronologicalBalance(entries, e.month, Number(member.openingBalance || 0));
+      const runningBalance = calculateChronologicalBalance(entries, e.month, Number(member.openingBalance || 0), creditRate, debitRate);
 
       return {
         _id: e._id, month: e.month,

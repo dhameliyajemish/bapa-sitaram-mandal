@@ -4,10 +4,13 @@ import { MdAdd, MdDownload, MdMessage, MdEmail } from 'react-icons/md';
 import axios from 'axios';
 
 const MonthlyEntry = () => {
-  const { members, entries, addEntry } = useContext(AppDataContext);
+  const { members, entries, addEntry, settings } = useContext(AppDataContext);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ memberId: '', month: selectedMonth, hapto: 0, upad: 0, vyaj: 0, dand: 0 });
+  const [formData, setFormData] = useState({
+    memberId: '', month: selectedMonth,
+    hapto: '', upad: '', vyaj: '', creditVyaj: '', dand: ''
+  });
 
   const [broadcastEmailLoading, setBroadcastEmailLoading] = useState(false);
   const [broadcastWhatsAppLoading, setBroadcastWhatsAppLoading] = useState(false);
@@ -35,12 +38,24 @@ const MonthlyEntry = () => {
     let balance = openingBalance;
     let currentMonth = minMonth;
 
+    const creditRate = settings?.creditInterestRate ?? 1;
+    const debitRate = settings?.debitInterestRate ?? 1;
+
     while (currentMonth.localeCompare(targetMonth) <= 0) {
-      balance = balance * 1.01;
       const mMonthEntries = entryMap[currentMonth] || [];
+      const hasExplicitCreditVyaj = mMonthEntries.some(e => Number(e.creditVyaj || 0) > 0);
+
+      if (balance > 0) {
+        if (!hasExplicitCreditVyaj) {
+          balance = balance * (1 + creditRate / 100);
+        }
+      } else if (balance < 0) {
+        balance = balance * (1 + debitRate / 100);
+      }
+
       let net = 0;
       mMonthEntries.forEach(e => {
-        net += Number(e.hapto || 0) - Number(e.upad || 0) + Number(e.vyaj || 0) + Number(e.dand || 0);
+        net += Number(e.hapto || 0) - Number(e.upad || 0) + Number(e.vyaj || 0) + Number(e.creditVyaj || 0) + Number(e.dand || 0);
       });
       balance += net;
 
@@ -57,36 +72,100 @@ const MonthlyEntry = () => {
     return Math.round(balance * 100) / 100;
   };
 
+  const getPreviousMonth = (monthStr) => {
+    if (!monthStr) return '';
+    let [yr, mo] = monthStr.split('-').map(Number);
+    mo--;
+    if (mo === 0) {
+      mo = 12;
+      yr--;
+    }
+    return `${yr}-${String(mo).padStart(2, '0')}`;
+  };
+
+  const calculateAutoVyaj = (memberId, month, currentUpad = 0) => {
+    if (!memberId || !month) return { creditVyaj: 0, debitVyaj: 0 };
+    
+    // 1. Calculate interest on previous month's outstanding balance
+    const prevMonth = getPreviousMonth(month);
+    const prevBalance = calculateMemberBalanceUpTo(memberId, prevMonth);
+    
+    let creditVyaj = 0;
+    let debitVyaj = 0;
+    
+    if (prevBalance > 0) {
+      const creditRate = settings?.creditInterestRate ?? 1;
+      creditVyaj = Math.round(prevBalance * (creditRate / 100) * 100) / 100;
+    } else if (prevBalance < 0) {
+      const debitRate = settings?.debitInterestRate ?? 1;
+      debitVyaj = Math.round(Math.abs(prevBalance) * (debitRate / 100) * 100) / 100;
+    }
+    
+    // 2. Calculate interest on current month's new withdrawal
+    const debitRate = settings?.debitInterestRate ?? 1;
+    const newUpad = Number(currentUpad) || 0;
+    debitVyaj += Math.round(newUpad * (debitRate / 100) * 100) / 100;
+    debitVyaj = Math.round(debitVyaj * 100) / 100;
+    
+    return { creditVyaj, debitVyaj };
+  };
+
   const handleOpenModal = () => {
-    setFormData({ memberId: '', month: selectedMonth, hapto: 0, upad: 0, vyaj: 0, dand: 0 });
+    setFormData({ memberId: '', month: selectedMonth, hapto: '', upad: '', vyaj: '', creditVyaj: '', dand: '' });
     setShowModal(true);
   };
 
   const handleUpadChange = (val) => {
-    const num = Number(val) || 0;
-    const computedVyaj = Math.round(num * 0.01 * 100) / 100; // 1% interest on withdrawal
+    const { creditVyaj, debitVyaj } = calculateAutoVyaj(formData.memberId, formData.month, val);
     setFormData({
       ...formData,
       upad: val,
-      vyaj: computedVyaj
+      vyaj: debitVyaj || '',
+      creditVyaj: creditVyaj || ''
     });
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    addEntry(formData);
-    setShowModal(false);
+    try {
+      await addEntry({
+        ...formData,
+        hapto: Number(formData.hapto) || 0,
+        upad:  Number(formData.upad)  || 0,
+        vyaj:  Number(formData.vyaj)  || 0,
+        creditVyaj: Number(formData.creditVyaj) || 0,
+        dand:  Number(formData.dand)  || 0,
+      });
+      setShowModal(false);
+      setFormData({ memberId: '', month: selectedMonth, hapto: '', upad: '', vyaj: '', creditVyaj: '', dand: '' });
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const calculateTotal = (entry) => {
     return Number(entry.hapto || 0) - Number(entry.upad || 0) + Number(entry.vyaj || 0) + Number(entry.dand || 0);
   };
 
-  const filteredEntries = entries.filter(e => e.month === selectedMonth);
+  const filteredEntries = entries
+    .filter(e => e.month === selectedMonth)
+    .sort((a, b) => {
+      const memA = members.find(m => String(m._id) === String(a.memberId?._id || a.memberId));
+      const memB = members.find(m => String(m._id) === String(b.memberId?._id || b.memberId));
+      const fataA = memA ? memA.fataNo : '';
+      const fataB = memB ? memB.fataNo : '';
+      const numA = parseInt(fataA, 10);
+      const numB = parseInt(fataB, 10);
+      if (isNaN(numA) && isNaN(numB)) return (fataA || '').localeCompare(fataB || '');
+      if (isNaN(numA)) return 1;
+      if (isNaN(numB)) return -1;
+      return numA - numB;
+    });
 
   // Calculate summary totals
   const sumHapto = filteredEntries.reduce((sum, entry) => sum + Number(entry.hapto || 0), 0);
   const sumUpad = filteredEntries.reduce((sum, entry) => sum + Number(entry.upad || 0), 0);
+  const sumCreditVyaj = filteredEntries.reduce((sum, entry) => sum + Number(entry.creditVyaj || 0), 0);
   const sumVyaj = filteredEntries.reduce((sum, entry) => sum + Number(entry.vyaj || 0), 0);
   const sumDand = filteredEntries.reduce((sum, entry) => sum + Number(entry.dand || 0), 0);
   const netTotal = sumHapto - sumUpad + sumVyaj + sumDand;
@@ -166,7 +245,12 @@ const MonthlyEntry = () => {
                 <td style="text-align: center; color: #888;">—</td>
               </tr>
               <tr>
-                <td>વ્યાજ (Interest)</td>
+                <td>જમા વ્યાજ (Credit Interest)</td>
+                <td style="text-align: right;">₹${entry.creditVyaj || 0}</td>
+                <td style="text-align: center; color: #888;">—</td>
+              </tr>
+              <tr>
+                <td>ઉપાડ વ્યાજ (Debit Interest)</td>
                 <td style="text-align: right;">₹${entry.vyaj || 0}</td>
                 <td style="text-align: center; color: #888;">—</td>
               </tr>
@@ -249,8 +333,12 @@ const MonthlyEntry = () => {
                   <td style="border: 1px solid #ddd; padding: 10px; text-align: right; color: #dc2626; font-weight: bold;">-₹${Number(entry.upad || 0).toFixed(2)}</td>
                 </tr>
                 <tr>
-                  <td style="border: 1px solid #ddd; padding: 10px; color: #15803d;">વ્યાજ (Interest)</td>
-                  <td style="border: 1px solid #ddd; padding: 10px; text-align: right; color: #16a34a; font-weight: bold;">₹${Number(entry.vyaj || 0).toFixed(2)}</td>
+                  <td style="border: 1px solid #ddd; padding: 10px; color: #0891b2;">જમા વ્યાજ (Credit Interest)</td>
+                  <td style="border: 1px solid #ddd; padding: 10px; text-align: right; color: #0891b2; font-weight: bold;">₹${Number(entry.creditVyaj || 0).toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 10px; color: #d97706;">ઉપાડ વ્યાજ (Debit Interest)</td>
+                  <td style="border: 1px solid #ddd; padding: 10px; text-align: right; color: #d97706; font-weight: bold;">₹${Number(entry.vyaj || 0).toFixed(2)}</td>
                 </tr>
                 <tr>
                   <td style="border: 1px solid #ddd; padding: 10px; color: #b91c1c;">દંડ (Penalty)</td>
@@ -313,22 +401,37 @@ const MonthlyEntry = () => {
 
     // Build one table body per month
     const allMonthTables = sortedMonths.map(month => {
-      let mSumHapto = 0, mSumUpad = 0, mSumVyaj = 0, mSumDand = 0;
-      const rowsHtml = monthGroups[month].map(entry => {
+      let mSumHapto = 0, mSumUpad = 0, mSumCreditVyaj = 0, mSumVyaj = 0, mSumDand = 0;
+      const sortedMEntries = [...monthGroups[month]].sort((a, b) => {
+        const memA = members.find(m => String(m._id) === String(a.memberId?._id || a.memberId));
+        const memB = members.find(m => String(m._id) === String(b.memberId?._id || b.memberId));
+        const fataA = memA ? memA.fataNo : '';
+        const fataB = memB ? memB.fataNo : '';
+        const numA = parseInt(fataA, 10);
+        const numB = parseInt(fataB, 10);
+        if (isNaN(numA) && isNaN(numB)) return (fataA || '').toString().localeCompare((fataB || '').toString());
+        if (isNaN(numA)) return 1;
+        if (isNaN(numB)) return -1;
+        return numA - numB;
+      });
+
+      const rowsHtml = sortedMEntries.map(entry => {
         const member = members.find(m => m._id === entry.memberId?._id || m._id === entry.memberId);
         if (!member) return '';
         mSumHapto += Number(entry.hapto || 0);
         mSumUpad += Number(entry.upad || 0);
+        mSumCreditVyaj += Number(entry.creditVyaj || 0);
         mSumVyaj += Number(entry.vyaj || 0);
         mSumDand += Number(entry.dand || 0);
         return `
           <tr>
             <td style="border: 1px solid #333; padding: 8px; text-align: center;">${member.fataNo || ''}</td>
             <td style="border: 1px solid #333; padding: 8px; text-align: left;">${member.name || ''}</td>
-            <td style="border: 1px solid #333; padding: 8px; text-align: right;">${entry.hapto || '0.00'}</td>
-            <td style="border: 1px solid #333; padding: 8px; text-align: right;">${entry.upad || '0.00'}</td>
-            <td style="border: 1px solid #333; padding: 8px; text-align: right;">${entry.vyaj || '0.00'}</td>
-            <td style="border: 1px solid #333; padding: 8px; text-align: right;">${entry.dand || '0.00'}</td>
+            <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${Number(entry.hapto || 0).toFixed(2)}</td>
+            <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${Number(entry.upad || 0).toFixed(2)}</td>
+            <td style="border: 1px solid #333; padding: 8px; text-align: right; color: #0891b2;">₹${Number(entry.creditVyaj || 0).toFixed(2)}</td>
+            <td style="border: 1px solid #333; padding: 8px; text-align: right; color: #d97706;">₹${Number(entry.vyaj || 0).toFixed(2)}</td>
+            <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${Number(entry.dand || 0).toFixed(2)}</td>
           </tr>
         `;
       }).join('');
@@ -339,12 +442,13 @@ const MonthlyEntry = () => {
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px;">
             <thead>
               <tr style="background-color: #e8eaf6;">
-                <th style="border: 1px solid #333; padding: 8px; text-align: center; width: 12%;">ખાતા નં.</th>
-                <th style="border: 1px solid #333; padding: 8px; text-align: left; width: 36%;">નામ</th>
-                <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 13%;">હપ્તો</th>
-                <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 13%;">ઉપાડ</th>
-                <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 13%;">વ્યાજ</th>
-                <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 13%;">દંડ</th>
+                <th style="border: 1px solid #333; padding: 8px; text-align: center; width: 10%;">ખાતા નં.</th>
+                <th style="border: 1px solid #333; padding: 8px; text-align: left; width: 30%;">નામ</th>
+                <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 12%;">હપ્તો</th>
+                <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 12%;">ઉપાડ</th>
+                <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 12%;">જમા વ્યાજ</th>
+                <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 12%;">ઉપાડ વ્યાજ</th>
+                <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 12%;">દંડ</th>
               </tr>
             </thead>
             <tbody>
@@ -355,7 +459,8 @@ const MonthlyEntry = () => {
                 <td style="border: 1px solid #333; padding: 8px; text-align: center;" colspan="2">મહિનાનો કુલ (Total)</td>
                 <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${mSumHapto.toFixed(2)}</td>
                 <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${mSumUpad.toFixed(2)}</td>
-                <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${mSumVyaj.toFixed(2)}</td>
+                <td style="border: 1px solid #333; padding: 8px; text-align: right; color: #0891b2;">₹${mSumCreditVyaj.toFixed(2)}</td>
+                <td style="border: 1px solid #333; padding: 8px; text-align: right; color: #d97706;">₹${mSumVyaj.toFixed(2)}</td>
                 <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${mSumDand.toFixed(2)}</td>
               </tr>
             </tfoot>
@@ -366,6 +471,7 @@ const MonthlyEntry = () => {
 
     const grandHapto = entries.reduce((s, e) => s + Number(e.hapto || 0), 0);
     const grandUpad  = entries.reduce((s, e) => s + Number(e.upad  || 0), 0);
+    const grandCreditVyaj = entries.reduce((s, e) => s + Number(e.creditVyaj || 0), 0);
     const grandVyaj  = entries.reduce((s, e) => s + Number(e.vyaj  || 0), 0);
     const grandDand  = entries.reduce((s, e) => s + Number(e.dand  || 0), 0);
 
@@ -376,18 +482,28 @@ const MonthlyEntry = () => {
       if (!member) return;
       const key = member._id;
       if (!memberSummary[key]) {
-        memberSummary[key] = { fataNo: member.fataNo, name: member.name, hapto: 0, upad: 0, vyaj: 0, dand: 0 };
+        memberSummary[key] = { fataNo: member.fataNo, name: member.name, hapto: 0, upad: 0, creditVyaj: 0, vyaj: 0, dand: 0 };
       }
       memberSummary[key].hapto += Number(entry.hapto || 0);
       memberSummary[key].upad  += Number(entry.upad  || 0);
+      memberSummary[key].creditVyaj += Number(entry.creditVyaj || 0);
       memberSummary[key].vyaj  += Number(entry.vyaj  || 0);
       memberSummary[key].dand  += Number(entry.dand  || 0);
     });
 
-    const latestMonth = sortedMonths[sortedMonths.length - 1];
+    const latestMonth = sortedMonths[sortedMonths.length - 1] || selectedMonth;
 
     const memberSummaryRows = Object.keys(memberSummary)
-      .sort((a, b) => (memberSummary[a].fataNo || '').toString().localeCompare((memberSummary[b].fataNo || '').toString()))
+      .sort((a, b) => {
+        const fataA = memberSummary[a].fataNo || '';
+        const fataB = memberSummary[b].fataNo || '';
+        const numA = parseInt(fataA, 10);
+        const numB = parseInt(fataB, 10);
+        if (isNaN(numA) && isNaN(numB)) return (fataA || '').toString().localeCompare((fataB || '').toString());
+        if (isNaN(numA)) return 1;
+        if (isNaN(numB)) return -1;
+        return numA - numB;
+      })
       .map(mId => {
         const ms = memberSummary[mId];
         const balance = calculateMemberBalanceUpTo(mId, latestMonth);
@@ -397,7 +513,8 @@ const MonthlyEntry = () => {
             <td style="border: 1px solid #333; padding: 8px; text-align: left;">${ms.name}</td>
             <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${ms.hapto.toFixed(2)}</td>
             <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${ms.upad.toFixed(2)}</td>
-            <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${ms.vyaj.toFixed(2)}</td>
+            <td style="border: 1px solid #333; padding: 8px; text-align: right; color: #0891b2;">₹${ms.creditVyaj.toFixed(2)}</td>
+            <td style="border: 1px solid #333; padding: 8px; text-align: right; color: #d97706;">₹${ms.vyaj.toFixed(2)}</td>
             <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${ms.dand.toFixed(2)}</td>
             <td style="border: 1px solid #333; padding: 8px; text-align: right; font-weight: bold; color: #1a237e;">₹${balance.toFixed(2)}</td>
           </tr>
@@ -443,17 +560,18 @@ const MonthlyEntry = () => {
           <!-- Per-Member Grand Summary -->
           <div class="member-summary-section">
             <h3 style="border-bottom: 3px double #333; margin-top: 30px; text-align: center; color: #1a237e;">સભ્ય મુજબ કુલ સરવાળો (Member-wise Grand Total)</h3>
-            <p style="text-align:center; font-size:12px; color:#555; margin-bottom:10px;">દરેક સભ્ય દ્વારા બધા મહિનામાં જમા થયેલ રકમ (Total amount deposited by each member across all months)</p>
+            <p style="text-align:center; font-size:12px; color:#555; margin-bottom:10px;">દરેક સભ્ય દ્વારા બધા મહિનામાં જમા થયેલ રકમ</p>
             <table style="width: 100%; border-collapse: collapse;">
               <thead>
                 <tr style="background-color: #c8cafc;">
                   <th style="border: 1px solid #333; padding: 8px; text-align: center; width: 10%;">ખાતા નં.</th>
-                  <th style="border: 1px solid #333; padding: 8px; text-align: left; width: 28%;">સભ્યનું નામ</th>
-                  <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 12%;">કુલ હપ્તો</th>
-                  <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 12%;">કુલ ઉપાડ</th>
-                  <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 12%;">કુલ વ્યાજ</th>
-                  <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 12%;">કુલ દંડ</th>
-                  <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 14%;">ચોખ્ખી રકમ</th>
+                  <th style="border: 1px solid #333; padding: 8px; text-align: left; width: 24%;">સભ્યનું નામ</th>
+                  <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 11%;">કુલ હપ્તો</th>
+                  <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 11%;">કુલ ઉપાડ</th>
+                  <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 11%;">કુલ જમા વ્યાજ</th>
+                  <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 11%;">કુલ ઉપાડ વ્યાજ</th>
+                  <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 11%;">કુલ દંડ</th>
+                  <th style="border: 1px solid #333; padding: 8px; text-align: right; width: 11%;">ચોખ્ખી રકમ</th>
                 </tr>
               </thead>
               <tbody>
@@ -464,7 +582,8 @@ const MonthlyEntry = () => {
                   <td style="border: 1px solid #333; padding: 8px; text-align: center;" colspan="2">બધા સભ્યો કુલ (Grand Total)</td>
                   <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${grandHapto.toFixed(2)}</td>
                   <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${grandUpad.toFixed(2)}</td>
-                  <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${grandVyaj.toFixed(2)}</td>
+                  <td style="border: 1px solid #333; padding: 8px; text-align: right; color: #0891b2;">₹${grandCreditVyaj.toFixed(2)}</td>
+                  <td style="border: 1px solid #333; padding: 8px; text-align: right; color: #d97706;">₹${grandVyaj.toFixed(2)}</td>
                   <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${grandDand.toFixed(2)}</td>
                   <td style="border: 1px solid #333; padding: 8px; text-align: right;">₹${grandBalance.toFixed(2)}</td>
                 </tr>
@@ -494,6 +613,7 @@ const MonthlyEntry = () => {
         hapto: entry.hapto,
         upad: entry.upad,
         vyaj: entry.vyaj,
+        creditVyaj: entry.creditVyaj || 0,
         dand: entry.dand,
         total: balance
       }, {
@@ -502,7 +622,7 @@ const MonthlyEntry = () => {
       
       if (res.data.simulated) {
         // Fallback to wa.me if simulated (meaning no API credentials are in .env)
-        const text = `નમસ્તે ${member.name},\nતમારો ${entry.month} નો રીપોર્ટ:\nહપ્તો: ₹${entry.hapto}\nઉપાડ: ₹${entry.upad}\nવ્યાજ: ₹${entry.vyaj}\nદંડ: ₹${entry.dand}\nકુલ બચત સિલક: ₹${balance.toFixed(2)}\n\nઆભાર,\nબાપા સીતારામ મંડળ`;
+        const text = `નમસ્તે ${member.name},\nતમારો ${entry.month} નો રીપોર્ટ:\nહપ્તો: ₹${entry.hapto}\nઉપાડ: ₹${entry.upad}\nજમા વ્યાજ: ₹${entry.creditVyaj || 0}\nઉપાડ વ્યાજ: ₹${entry.vyaj || 0}\nદંડ: ₹${entry.dand}\nકુલ બચત સિલક: ₹${balance.toFixed(2)}\n\nઆભાર,\nબાપા સીતારામ મંડળ`;
         const url = `https://wa.me/91${member.mobile}?text=${encodeURIComponent(text)}`;
         window.open(url, '_blank');
       } else {
@@ -536,6 +656,7 @@ const MonthlyEntry = () => {
         hapto: entry.hapto,
         upad: entry.upad,
         vyaj: entry.vyaj,
+        creditVyaj: entry.creditVyaj || 0,
         dand: entry.dand,
         total: balance
       };
@@ -583,6 +704,7 @@ const MonthlyEntry = () => {
         hapto: entry.hapto,
         upad: entry.upad,
         vyaj: entry.vyaj,
+        creditVyaj: entry.creditVyaj || 0,
         dand: entry.dand,
         total: balance
       };
@@ -598,7 +720,7 @@ const MonthlyEntry = () => {
         
         // Sequentially offer sending via wa.me to let them send manually
         for (const r of reports) {
-          const text = `નમસ્તે ${r.memberName},\nતમારો ${r.month} નો રીપોર્ટ:\nહપ્તો: ₹${r.hapto}\nઉપાડ: ₹${r.upad}\nવ્યાજ: ₹${r.vyaj}\nદંડ: ₹${r.dand}\nકુલ બચત સિલક: ₹${r.total.toFixed(2)}\n\nઆભાર,\nબાપા સીતારામ મંડળ`;
+          const text = `નમસ્તે ${r.memberName},\nતમારો ${r.month} નો રીપોર્ટ:\nહપ્તો: ₹${r.hapto}\nઉપાડ: ₹${r.upad}\nજમા વ્યાજ: ₹${r.creditVyaj || 0}\nઉપાડ વ્યાજ: ₹${r.vyaj || 0}\nદંડ: ₹${r.dand}\nકુલ બચત સિલક: ₹${r.total.toFixed(2)}\n\nઆભાર,\nબાપા સીતારામ મંડળ`;
           const url = `https://wa.me/91${r.mobile}?text=${encodeURIComponent(text)}`;
           window.open(url, '_blank');
         }
@@ -632,6 +754,7 @@ const MonthlyEntry = () => {
         hapto: entry.hapto,
         upad: entry.upad,
         vyaj: entry.vyaj,
+        creditVyaj: entry.creditVyaj || 0,
         dand: entry.dand,
         total: balance
       }, {
@@ -688,9 +811,13 @@ const MonthlyEntry = () => {
              <h3 style={{ margin: '0 0 0.5rem 0', color: '#b91c1c', fontSize: '0.9rem' }}>⬇ ઉપાડ (Upad)</h3>
              <p style={{ margin: '0', fontSize: 'clamp(1rem, 2.5vw, 1.8rem)', fontWeight: 'bold', color: '#dc2626', wordBreak: 'break-all' }}>-₹{sumUpad.toFixed(2)}</p>
            </div>
-           <div className="summary-card" style={{ backgroundColor: '#f0fdf4', border: '2px solid #86efac', borderRadius: '0.5rem', padding: '1rem', overflow: 'hidden' }}>
-             <h3 style={{ margin: '0 0 0.5rem 0', color: '#15803d', fontSize: '0.9rem' }}>⬆ વ્યાજ (Vyaj)</h3>
-             <p style={{ margin: '0', fontSize: 'clamp(1rem, 2.5vw, 1.8rem)', fontWeight: 'bold', color: '#16a34a', wordBreak: 'break-all' }}>+₹{sumVyaj.toFixed(2)}</p>
+           <div className="summary-card" style={{ backgroundColor: '#e0f2fe', border: '2px solid #bae6fd', borderRadius: '0.5rem', padding: '1rem', overflow: 'hidden' }}>
+             <h3 style={{ margin: '0 0 0.5rem 0', color: '#0369a1', fontSize: '0.9rem' }}>⬆ જમા વ્યાજ (Credit Interest)</h3>
+             <p style={{ margin: '0', fontSize: 'clamp(1rem, 2.5vw, 1.8rem)', fontWeight: 'bold', color: '#0284c7', wordBreak: 'break-all' }}>+₹{sumCreditVyaj.toFixed(2)}</p>
+           </div>
+           <div className="summary-card" style={{ backgroundColor: '#fffbeb', border: '2px solid #fde68a', borderRadius: '0.5rem', padding: '1rem', overflow: 'hidden' }}>
+             <h3 style={{ margin: '0 0 0.5rem 0', color: '#b45309', fontSize: '0.9rem' }}>⬆ ઉપાડ વ્યાજ (Debit Interest)</h3>
+             <p style={{ margin: '0', fontSize: 'clamp(1rem, 2.5vw, 1.8rem)', fontWeight: 'bold', color: '#d97706', wordBreak: 'break-all' }}>+₹{sumVyaj.toFixed(2)}</p>
            </div>
            <div className="summary-card" style={{ backgroundColor: '#fef2f2', border: '2px solid #fca5a5', borderRadius: '0.5rem', padding: '1rem', overflow: 'hidden' }}>
              <h3 style={{ margin: '0 0 0.5rem 0', color: '#b91c1c', fontSize: '0.9rem' }}>⬇ દંડ (Dand)</h3>
@@ -714,7 +841,8 @@ const MonthlyEntry = () => {
                  <th style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}>કુલ ઉપાડ (All Months)</th>
                  <th>મહિનાનો હપ્તો (Hapto)</th>
                  <th>ઉપાડ (Upad)</th>
-                 <th>વ્યાજ (Vyaj)</th>
+                 <th>જમા વ્યાજ (Credit Interest)</th>
+                 <th>ઉપાડ વ્યાજ (Debit Interest)</th>
                  <th>દંડ (Dand)</th>
                  <th>કુલ બચત સિલક (Balance)</th>
                  <th>ક્રિયા (Action)</th>
@@ -745,7 +873,8 @@ const MonthlyEntry = () => {
                      </td>
                      <td style={{ color: '#16a34a', fontWeight: '600' }}>+₹{Number(entry.hapto || 0).toFixed(2)}</td>
                      <td style={{ color: '#dc2626', fontWeight: '600' }}>-₹{Number(entry.upad || 0).toFixed(2)}</td>
-                     <td style={{ color: '#16a34a', fontWeight: '600' }}>₹{Number(entry.vyaj || 0).toFixed(2)}</td>
+                     <td style={{ color: '#16a34a', fontWeight: '600' }}>₹{Number(entry.creditVyaj || 0).toFixed(2)}</td>
+                     <td style={{ color: '#dc2626', fontWeight: '600' }}>₹{Number(entry.vyaj || 0).toFixed(2)}</td>
                      <td style={{ color: '#dc2626', fontWeight: '600' }}>₹{Number(entry.dand || 0).toFixed(2)}</td>
                      <td style={{ fontWeight: 'bold', color: '#1a237e' }}>
                        ₹{balance.toFixed(2)}
@@ -766,7 +895,7 @@ const MonthlyEntry = () => {
                })}
                {filteredEntries.length === 0 && (
                  <tr>
-                   <td colSpan="10" style={{ textAlign: 'center', padding: '2rem' }}>આ મહિના માટે કોઈ એન્ટ્રી નથી</td>
+                   <td colSpan="11" style={{ textAlign: 'center', padding: '2rem' }}>આ મહિના માટે કોઈ એન્ટ્રી નથી</td>
                  </tr>
                )}
              </tbody>
@@ -784,7 +913,15 @@ const MonthlyEntry = () => {
              <form onSubmit={handleSave}>
                <div className="input-group">
                  <label>સભ્ય પસંદ કરો</label>
-                 <select required value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})}>
+                 <select required value={formData.memberId} onChange={e => {
+                    const selectedMemberId = e.target.value;
+                    const computedVyaj = calculateAutoVyaj(selectedMemberId, formData.month, formData.upad);
+                    setFormData({
+                      ...formData,
+                      memberId: selectedMemberId,
+                      vyaj: computedVyaj || 0
+                    });
+                  }}>
                    <option value="">-- પસંદ કરો --</option>
                    {members.map(m => (
                      <option key={m._id} value={m._id}>{m.fataNo} - {m.name}</option>
@@ -793,7 +930,15 @@ const MonthlyEntry = () => {
                </div>
                <div className="input-group">
                  <label>મહિનો</label>
-                 <input type="month" required value={formData.month} onChange={e => setFormData({...formData, month: e.target.value})} />
+                 <input type="month" required value={formData.month} onChange={e => {
+                      const selectedMonth = e.target.value;
+                      const computedVyaj = calculateAutoVyaj(formData.memberId, selectedMonth, formData.upad);
+                      setFormData({
+                        ...formData,
+                        month: selectedMonth,
+                        vyaj: computedVyaj || 0
+                      });
+                    }} />
                </div>
                <div className="input-group">
                  <label>હપ્તો (કલેક્શન)</label>

@@ -4,7 +4,7 @@ const Member = require('../models/Member');
 // @route GET /api/members
 exports.getMembers = async (req, res, next) => {
   try {
-    const { page = 1, limit = 50, search = '', isActive } = req.query;
+    const { page = 1, limit = 10000, search = '', isActive } = req.query;
     const query = {};
     if (search) {
       query.$or = [
@@ -18,6 +18,7 @@ exports.getMembers = async (req, res, next) => {
 
     const total = await Member.countDocuments(query);
     const members = await Member.find(query)
+      .collation({ locale: 'en', numericOrdering: true })
       .sort({ fataNo: 1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);

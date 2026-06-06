@@ -13,6 +13,7 @@ import MembersPage from './pages/MembersPage';
 import TransactionsPage from './pages/TransactionsPage';
 import LoansPage from './pages/Loans.jsx';
 import ReportsPage from './pages/ReportsPage';
+import SettingsPage from './pages/SettingsPage';
 
 /* ── ProtectedRoute ─────────────────────────────────────────── */
 const ProtectedRoute = ({ children }) => {
@@ -46,6 +47,7 @@ const App = () => (
         <Route path="transactions"            element={<TransactionsPage />} />
         <Route path="loans"                   element={<LoansPage />} />
         <Route path="reports"                 element={<ReportsPage />} />
+        <Route path="settings"                element={<SettingsPage />} />
       </Route>
     </Routes>
   </Router>

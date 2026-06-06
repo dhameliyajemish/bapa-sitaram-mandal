@@ -33,6 +33,17 @@ export const removeMember = createAsyncThunk(
   }
 );
 
+const sortMembersList = (list) => {
+  return [...list].sort((a, b) => {
+    const numA = parseInt(a.fataNo, 10);
+    const numB = parseInt(b.fataNo, 10);
+    if (isNaN(numA) && isNaN(numB)) return (a.fataNo || '').localeCompare(b.fataNo || '');
+    if (isNaN(numA)) return 1;
+    if (isNaN(numB)) return -1;
+    return numA - numB;
+  });
+};
+
 const memberSlice = createSlice({
   name: 'members',
   initialState: { list: [], loading: false, error: null, lastFetched: null },
@@ -41,12 +52,16 @@ const memberSlice = createSlice({
     builder
       .addCase(loadMembers.pending,   (s) => { s.loading = true; s.error = null; })
       .addCase(loadMembers.fulfilled, (s, a) => {
-        s.loading = false; s.list = a.payload.data || a.payload || []; s.lastFetched = Date.now();
+        s.loading = false;
+        s.list = sortMembersList(a.payload.data || a.payload || []);
+        s.lastFetched = Date.now();
       })
       .addCase(loadMembers.rejected,  (s, a) => { s.loading = false; s.error = a.payload; })
-      .addCase(addMember.fulfilled,  (s, a) => { s.list.push(a.payload); })
+      .addCase(addMember.fulfilled,  (s, a) => {
+        s.list = sortMembersList([...s.list, a.payload]);
+      })
       .addCase(editMember.fulfilled, (s, a) => {
-        s.list = s.list.map((m) => m._id === a.payload.id ? a.payload.data : m);
+        s.list = sortMembersList(s.list.map((m) => m._id === a.payload.id ? a.payload.data : m));
       })
       .addCase(removeMember.fulfilled, (s, a) => {
         s.list = s.list.filter((m) => m._id !== a.payload);

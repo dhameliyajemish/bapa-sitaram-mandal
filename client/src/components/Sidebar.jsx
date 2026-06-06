@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { MdDashboard, MdPeople, MdPayments, MdAccountBalance, MdBarChart, MdMenu, MdClose } from 'react-icons/md';
+import { MdDashboard, MdPeople, MdPayments, MdAccountBalance, MdBarChart, MdMenu, MdClose, MdSettings } from 'react-icons/md';
 
 const navItems = [
   { to: '/', icon: <MdDashboard size={20} />, label: 'ડૅશબોર્ડ', sublabel: 'Dashboard', end: true },
@@ -8,6 +8,7 @@ const navItems = [
   { to: '/entries', icon: <MdPayments size={20} />, label: 'માસિક એન્ટ્રી', sublabel: 'Monthly Entry' },
   { to: '/loans', icon: <MdAccountBalance size={20} />, label: 'લોન', sublabel: 'Loans' },
   { to: '/reports', icon: <MdBarChart size={20} />, label: 'રિપોર્ટ', sublabel: 'Reports' },
+  { to: '/settings', icon: <MdSettings size={20} />, label: 'સેટિંગ્સ', sublabel: 'Settings' },
 ];
 
 const Sidebar = () => {

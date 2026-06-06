@@ -20,6 +20,7 @@ app.use('/api/email',      require('./routes/emailRoutes'));
 app.use('/api/admin',      require('./routes/adminRoutes'));
 app.use('/api/whatsapp',   require('./routes/whatsappRoutes'));
 app.use('/api/reports',    require('./routes/reportRoutes'));
+app.use('/api/settings',   require('./routes/settingRoutes'));
 // -------------------------------------------------------------------------
 const errorHandler = require('./middleware/errorHandler');
 
