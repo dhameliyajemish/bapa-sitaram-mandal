@@ -3,7 +3,7 @@ const fs = require('fs');
 const { DatabaseSync } = require('node:sqlite');
 let dbPath;
 
-if (process.env.DATABASE_PATH) {
+if (process.env.DATABASE_PATH && process.env.NODE_ENV !== 'production') {
   dbPath = process.env.DATABASE_PATH;
 } else {
   try {
