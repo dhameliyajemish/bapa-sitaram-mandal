@@ -37,13 +37,17 @@
 * નવીન રજીસ્ટ્રેશન (`/register`) અને લોગીન પેનલ.
 * **Forgot Password**: એડમિન પોતાના રજીસ્ટર્ડ ઈમેલ પર OTP મેળવીને પાસવર્ડ રીસેટ કરી શકે છે (સુરક્ષા માટે OTP ક્યારેય સ્ક્રીન પર દેખાશે નહીં).
 
+### ૬. ડેટા બેકઅપ અને રીસ્ટોર (Backup & Restore)
+* **ડેટા નિકાસ કરો (Export)**: સેટિંગ્સ પેજ પરથી આખા મંડળના ડેટાનો બેકઅપ (.db ફાઇલ) સરળતાથી ડાઉનલોડ કરો અને તેને સેવ અથવા શેર કરો.
+* **ડેટા આયાત કરો (Import/Restore)**: અગાઉ ડાઉનલોડ કરેલી બેકઅપ ફાઇલ (.db) અપલોડ કરીને તમામ સભ્યો અને વ્યવહારોનો ડેટા એક ક્લિકમાં પાછો લાવો.
+
 ---
 
 ## 🛠️ વપરાયેલ ટેકનોલોજી (Tech Stack)
 
 * **ફ્રન્ટએન્ડ**: React (Vite), Redux Toolkit, Bootstrap, React Icons, Chart.js
 * **બેકએન્ડ**: Node.js, Express.js
-* **ડેટાબેઝ**: MongoDB (Mongoose)
+* **ડેટાબેઝ**: SQLite (Node.js native `node:sqlite` મોડ્યુલ દ્વારા ચાલતો ફાસ્ટ અને ફાઇલ-આધારિત ડેટાબેઝ)
 * **મેઈલ સર્વિસ**: Nodemailer (Gmail SMTP દ્વારા ઈમેલ અને OTP મોકલવા માટે)
 
 ---
@@ -51,11 +55,10 @@
 ## ⚙️ સેટઅપ અને ચાલુ કરવાની રીત (Setup & Run)
 
 ### પૂર્વજરૂરિયાત (Prerequisites)
-* [Node.js](https://nodejs.org/) (v16 કે તેથી નવું)
-* [MongoDB](https://www.mongodb.com/) ચાલુ હોવું જોઈએ
+* [Node.js](https://nodejs.org/) (v22 કે તેથી નવું - કારણ કે તે નેટીવ SQLite ડેટાબેઝને સપોર્ટ કરે છે)
 
 ### ૧. પ્રોજેક્ટ ડાઉનલોડ કરી ડિપેન્ડન્સી ઇન્સ્ટોલ કરવી
-રૂટ ફોલ્ડર, સર્વર ફોલ્ડર અને ક્લાયન્ટ ફોલ્ડરમાં નીચેના કમાન્ડ ચલાવો:
+રૂટ ફોલ્ડર, સર્વર ફોલ્ડરમાં નીચેના કમાન્ડ ચલાવો:
 ```bash
 # મેઈન ફોલ્ડરમાં
 npm install
@@ -70,11 +73,11 @@ npm install
 ```
 
 ### ૨. એન્વાયરમેન્ટ વેરિયેબલ્સ સેટ કરવા (.env Setup)
-`server` ફોલ્ડરની અંદર `.env` નામની ફાઇલ બનાવો અને નીચે મુજબની વિગતો લખો:
+`server` ફોલ્ડરની અંદર `.env` નામની ફાઇલમાં નીચે મુજબની વિગતો લખો:
 ```env
 PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/mandalDB
 JWT_SECRET=your_jwt_secret_key_here
+DATABASE_PATH=D:/bapasitarm mandal/server/database.db
 
 # Gmail SMTP Configuration (ઈમેલ અને OTP માટે)
 EMAIL_USER=your_gmail_address@gmail.com
@@ -93,7 +96,12 @@ npm run dev
 ```
 
 * **બેકએન્ડ (API)**: [http://localhost:5000](http://localhost:5000) પર ચાલુ થશે.
-* **ફ્રન્ટએન્ડ (વેબસાઈટ)**: [http://localhost:5173](http://localhost:5173) પર ચાલુ થશે (જો આ પોર્ટ રોકાયેલ હોય તો `http://localhost:5174` પર).
+* **ફ્રન્ટએન્ડ (વેબસાઈટ)**: [http://localhost:5173](http://localhost:5173) પર ચાલુ થશે.
+
+ડેસ્કટોપ એપ્લિકેશનને ડેવલપમેન્ટ મોડમાં ચાલુ કરવા માટે નવું ટર્મિનલ ખોલીને આ કમાન્ડ રન કરો:
+```bash
+npm run desktop
+```
 
 ---
 
@@ -104,17 +112,17 @@ npm run dev
 │   ├── src/
 │   │   ├── api/         # Axios API કનેક્શન ફાઈલો
 │   │   ├── context/     # સ્ટેટ મેનેજમેન્ટ Context
-│   │   ├── pages/       # પેજીસ (MonthlyEntry, ReportsPage, Loans વગેરે)
+│   │   ├── pages/       # પેજીસ (MonthlyEntry, ReportsPage, SettingsPage વગેરે)
 │   │   ├── redux/       # Redux સ્લાઈસ
 │   │   └── utils/       # ઉપયોગી હેલ્પર ફંક્શનો
 │   └── package.json
 │
 ├── server/              # નોડ/એક્સપ્રેસ બેકએન્ડ
-│   ├── config/          # ડેટાબેઝ જોડાણ સેટિંગ્સ
-│   ├── controllers/     # લોજિક કંટ્રોલર્સ (રિપોર્ટ અને એન્ટ્રી કંટ્રોલર)
+│   ├── config/          # ડેટાબેઝ જોડાણ સેટિંગ્સ (db.js)
+│   ├── controllers/     # લોજિક કંટ્રોલર્સ (રિપોર્ટ, એન્ટ્રી, સેટિંગ્સ કંટ્રોલર)
 │   ├── middleware/      # સિક્યોરિટી ચેક (JWT)
-│   ├── models/          # MongoDB સ્કીમા (Member, MonthlyEntry, Admin)
 │   ├── routes/          # Express API ના માર્ગો (Routes)
+│   ├── database.db      # SQLite ડેટાબેઝ ફાઇલ (ડેટા સ્ટોર કરવા માટે)
 │   └── index.js         # બેકએન્ડ ચાલુ કરવાની મેઈન ફાઈલ
 │
 └── package.json         # મેઇન પ્રોજેક્ટ સેટિંગ્સ અને રન કરવાના કમાન્ડ્સ
