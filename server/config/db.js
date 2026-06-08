@@ -2,16 +2,18 @@ const path = require('path');
 const fs = require('fs');
 const { DatabaseSync } = require('node:sqlite');
 
-let dbPath;
-
-try {
-  // Check if we are running inside Electron (main process)
-  const { app } = require('electron');
-  if (app) {
-    dbPath = path.join(app.getPath('userData'), 'database.db');
+if (process.env.DATABASE_PATH) {
+  dbPath = process.env.DATABASE_PATH;
+} else {
+  try {
+    // Check if we are running inside Electron (main process)
+    const { app } = require('electron');
+    if (app) {
+      dbPath = path.join(app.getPath('userData'), 'database.db');
+    }
+  } catch (e) {
+    // Fallback for standalone Express runner
   }
-} catch (e) {
-  // Fallback for standalone Express runner
 }
 
 if (!dbPath) {
