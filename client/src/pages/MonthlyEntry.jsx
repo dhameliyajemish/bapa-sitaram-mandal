@@ -3,6 +3,8 @@ import { AppDataContext } from '../context/AppDataContext';
 import { MdAdd, MdDownload, MdMessage, MdEmail } from 'react-icons/md';
 import axios from 'axios';
 
+const API_URL = import.meta.env.DEV ? 'http://localhost:5000/api' : '/api';
+
 const MonthlyEntry = () => {
   const { members, entries, addEntry, settings } = useContext(AppDataContext);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
@@ -606,7 +608,7 @@ const MonthlyEntry = () => {
     try {
       const balance = calculateMemberBalanceUpTo(member._id, entry.month);
       const token = localStorage.getItem('mandal_token');
-      const res = await axios.post('http://localhost:5000/api/whatsapp/send', {
+      const res = await axios.post(`${API_URL}/whatsapp/send`, {
         mobile: member.mobile,
         memberName: member.name,
         month: entry.month,
@@ -671,7 +673,7 @@ const MonthlyEntry = () => {
 
     try {
       const token = localStorage.getItem('mandal_token');
-      const res = await axios.post('http://localhost:5000/api/email/send-all', { reports }, {
+      const res = await axios.post(`${API_URL}/email/send-all`, { reports }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert(`બ્રોડકાસ્ટ પૂર્ણ! ${res.data.successCount} ઈમેલ સફળતાપૂર્વક મોકલાયા, ${res.data.failCount} અસફળ.`);
@@ -712,7 +714,7 @@ const MonthlyEntry = () => {
 
     try {
       const token = localStorage.getItem('mandal_token');
-      const res = await axios.post('http://localhost:5000/api/whatsapp/send-all', { reports }, {
+      const res = await axios.post(`${API_URL}/whatsapp/send-all`, { reports }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.simulated) {
@@ -747,7 +749,7 @@ const MonthlyEntry = () => {
     try {
       const balance = calculateMemberBalanceUpTo(member._id, entry.month);
       const token = localStorage.getItem('mandal_token');
-      await axios.post('http://localhost:5000/api/email/send', {
+      await axios.post(`${API_URL}/email/send`, {
         email: member.email,
         memberName: member.name,
         month: entry.month,

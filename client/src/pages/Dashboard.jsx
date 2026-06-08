@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { loadMembers } from '../redux/slices/memberSlice.js';
 import { loadEntries } from '../redux/slices/entrySlice.js';
-import { loadLoans } from '../redux/slices/loanSlice.js';
 import helpers from '../utils/helpers';
 
 /**
@@ -149,15 +148,11 @@ const Dashboard = () => {
   const entries = useSelector((state) => state.entries?.list || []);
   const entriesLoading = useSelector((state) => state.entries?.loading);
   const entriesError = useSelector((state) => state.entries?.error);
-  const loans = useSelector((state) => state.loans?.list || []);
-  const loansLoading = useSelector((state) => state.loans.loading);
-  const loansError = useSelector((state) => state.loans.error);
   
   // Load data on component mount
   useEffect(() => {
     dispatch(loadMembers());
     dispatch(loadEntries());
-    dispatch(loadLoans());
   }, [dispatch]);
   
   // Memoized calculations for stats - all computed from Redux state
@@ -166,8 +161,6 @@ const Dashboard = () => {
     const totalDeposits = entries.reduce((sum, e) => sum + Number(e.hapto || 0), 0);
     const totalWithdrawals = entries.reduce((sum, e) => sum + Number(e.upad || 0), 0);
     const netBalance = totalDeposits - totalWithdrawals;
-    const activeLoans = loans.filter(l => l.status === 'Active').length;
-    const totalLoanAmount = loans.reduce((sum, l) => sum + Number(l.amount || 0), 0);
     const totalInterest = entries.reduce((sum, e) => sum + Number(e.vyaj || 0), 0);
     const totalPenalty = entries.reduce((sum, e) => sum + Number(e.dand || 0), 0);
     
@@ -176,12 +169,10 @@ const Dashboard = () => {
       totalDeposits,
       totalWithdrawals,
       netBalance,
-      activeLoans,
-      totalLoanAmount,
       totalInterest,
       totalPenalty
     };
-  }, [members, entries, loans]);
+  }, [members, entries]);
   
   // Monthly data for chart using helpers.getLast12Months()
   const { monthlyDeposits, chartLabels } = useMemo(() => {
@@ -198,15 +189,13 @@ const Dashboard = () => {
     return { monthlyDeposits: deposits, chartLabels: labels };
   }, [entries]);
   
-  const isLoading = membersLoading || entriesLoading || loansLoading;
-  const hasError = membersError || entriesError || loansError;
+  const isLoading = membersLoading || entriesLoading;
+  const hasError = membersError || entriesError;
   
   // Summary items for side cards
   const summaryItems = [
     { label: 'Total Members', value: (stats.totalMembers || 0).toString() },
-    { label: 'Total Entries', value: (entries.length || 0).toString() },
-    { label: 'Total Loans', value: (loans.length || 0).toString() },
-    { label: 'Active Loans', value: (stats.activeLoans || 0).toString(), positive: true }
+    { label: 'Total Entries', value: (entries.length || 0).toString() }
   ];
   
   const financialItems = [
@@ -240,13 +229,12 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
-          {/* Stat Cards Grid - 6 cards in a row */}
+          {/* Stat Cards Grid - 5 cards in a row */}
           <div className="row g-3 mb-4">
             <StatCard title="Total Members" value={stats.totalMembers} icon="👥" color="#6366f1" sub="Active members"/>
             <StatCard title="Total Deposits" value={fmt(stats.totalDeposits)} icon="💰" color="#10b981" sub={fmt(stats.totalInterest) + ' interest'}/>
             <StatCard title="Total Withdrawals" value={fmt(stats.totalWithdrawals)} icon="📤" color="#ef4444"/>
             <StatCard title="Net Balance" value={fmt(stats.netBalance)} icon="🏦" color={getValueColor(stats.netBalance)}/>
-            <StatCard title="Active Loans" value={stats.activeLoans} icon="📋" color="#3b82f6" sub={fmt(stats.totalLoanAmount)}/>
             <StatCard title="Total Penalty" value={fmt(stats.totalPenalty)} icon="⚠️" color="#f97316"/>
           </div>
           

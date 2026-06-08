@@ -1,6 +1,7 @@
-const Admin = require('../models/Admin');
+const { db } = require('../config/db');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const bcrypt = require('bcryptjs');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'secret123', {
@@ -12,24 +13,30 @@ const registerAdmin = async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
     
-    const emailExists = await Admin.findOne({ email });
+    const emailExists = db.prepare('SELECT * FROM admins WHERE email = ?').get(email);
     if (emailExists) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    const usernameExists = await Admin.findOne({ username });
+    const usernameExists = db.prepare('SELECT * FROM admins WHERE username = ?').get(username);
     if (usernameExists) {
       return res.status(400).json({ message: 'Username already taken' });
     }
 
-    const admin = await Admin.create({ username, email, password });
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    if (admin) {
+    const result = db.prepare(
+      'INSERT INTO admins (username, email, password) VALUES (?, ?, ?)'
+    ).run(username, email, hashedPassword);
+
+    if (result.lastInsertRowid) {
+      const adminId = result.lastInsertRowid;
       res.status(201).json({
-        _id: admin._id,
-        username: admin.username,
-        email: admin.email,
-        token: generateToken(admin._id),
+        _id: adminId,
+        username,
+        email,
+        token: generateToken(adminId),
       });
     } else {
       res.status(400).json({ message: 'Invalid admin data' });
@@ -42,14 +49,14 @@ const registerAdmin = async (req, res, next) => {
 const authAdmin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const admin = await Admin.findOne({ email });
+    const admin = db.prepare('SELECT * FROM admins WHERE email = ?').get(email);
 
-    if (admin && (await admin.matchPassword(password))) {
+    if (admin && (await bcrypt.compare(password, admin.password))) {
       res.json({
-        _id: admin._id,
+        _id: admin.id,
         username: admin.username,
         email: admin.email,
-        token: generateToken(admin._id),
+        token: generateToken(admin.id),
       });
     } else {
       res.status(401).json({ message: 'Invalid email or password' });
@@ -66,15 +73,16 @@ const forgotPassword = async (req, res, next) => {
       return res.status(400).json({ message: 'Email is required' });
     }
 
-    const admin = await Admin.findOne({ email });
+    const admin = db.prepare('SELECT * FROM admins WHERE email = ?').get(email);
     if (!admin) {
       return res.status(404).json({ message: 'Email is not registered' });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    admin.resetPasswordOTP = otp;
-    admin.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 mins
-    await admin.save();
+    const expires = Date.now() + 15 * 60 * 1000; // 15 mins
+
+    db.prepare('UPDATE admins SET resetPasswordOTP = ?, resetPasswordExpires = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(otp, expires, admin.id);
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -131,7 +139,7 @@ const resetPassword = async (req, res, next) => {
       return res.status(400).json({ message: 'Email, OTP, and new password are required' });
     }
 
-    const admin = await Admin.findOne({ email });
+    const admin = db.prepare('SELECT * FROM admins WHERE email = ?').get(email);
     if (!admin) {
       return res.status(404).json({ message: 'Admin not found' });
     }
@@ -144,10 +152,12 @@ const resetPassword = async (req, res, next) => {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
 
-    admin.password = newPassword;
-    admin.resetPasswordOTP = undefined;
-    admin.resetPasswordExpires = undefined;
-    await admin.save();
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    db.prepare(
+      'UPDATE admins SET password = ?, resetPasswordOTP = NULL, resetPasswordExpires = NULL, updatedAt = CURRENT_TIMESTAMP WHERE id = ?'
+    ).run(hashedPassword, admin.id);
 
     res.json({ message: 'Password reset successfully!' });
   } catch (err) {

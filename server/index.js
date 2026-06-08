@@ -1,7 +1,8 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const connectDB = require('./config/db');
+const path = require('path');
+const { connectDB } = require('./config/db');
 
 dotenv.config();
 connectDB();
@@ -15,7 +16,6 @@ app.use(express.json());
 app.use('/api/auth',       require('./routes/authRoutes'));
 app.use('/api/members',    require('./routes/memberRoutes'));
 app.use('/api/entries',    require('./routes/entryRoutes'));
-app.use('/api/loans',      require('./routes/loanRoutes'));
 app.use('/api/email',      require('./routes/emailRoutes'));
 app.use('/api/admin',      require('./routes/adminRoutes'));
 app.use('/api/whatsapp',   require('./routes/whatsappRoutes'));
@@ -24,9 +24,21 @@ app.use('/api/settings',   require('./routes/settingRoutes'));
 // -------------------------------------------------------------------------
 const errorHandler = require('./middleware/errorHandler');
 
-app.get('/', (req, res) => {
-  res.json({ message: 'Mandal Management API is running', version: '2.0.0' });
-});
+// Serve static assets in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../client/dist')));
+
+  app.get(/(.*)/, (req, res) => {
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ message: 'API route not found' });
+    }
+    res.sendFile(path.resolve(__dirname, '../client/dist/index.html'));
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.json({ message: 'Mandal Management API is running', version: '2.0.0' });
+  });
+}
 
 // Global error handler
 app.use(errorHandler);

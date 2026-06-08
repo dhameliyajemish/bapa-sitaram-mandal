@@ -1,5 +1,4 @@
 const nodemailer = require('nodemailer');
-const Member = require('../models/Member');
 
 const sendMonthlyReportEmail = async (req, res) => {
   const { email, memberName, month, hapto, upad, vyaj, dand, total } = req.body;

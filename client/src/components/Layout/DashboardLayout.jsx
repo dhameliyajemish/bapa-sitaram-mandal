@@ -40,7 +40,6 @@ const DashboardLayout = () => {
     { to: '/',              icon: 'bi-speedometer2', label: 'ડેશબોર્ડ' },
     { to: '/members',       icon: 'bi-people',        label: 'સભ્યો'    },
     { to: '/transactions',  icon: 'bi-receipt',        label: 'એન્ટ્રી'  },
-    { to: '/loans',         icon: 'bi-cash-stack',     label: 'લોન'      },
     { to: '/reports',       icon: 'bi-graph-up',       label: 'રિપોર્ટ્સ'},
     { to: '/settings',      icon: 'bi-gear',           label: 'સેટિંગ્સ'  },
   ];

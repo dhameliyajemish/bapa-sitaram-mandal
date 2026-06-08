@@ -6,7 +6,6 @@ const navItems = [
   { to: '/', icon: <MdDashboard size={20} />, label: 'ડૅશબોર્ડ', sublabel: 'Dashboard', end: true },
   { to: '/members', icon: <MdPeople size={20} />, label: 'સભ્યો', sublabel: 'Members' },
   { to: '/entries', icon: <MdPayments size={20} />, label: 'માસિક એન્ટ્રી', sublabel: 'Monthly Entry' },
-  { to: '/loans', icon: <MdAccountBalance size={20} />, label: 'લોન', sublabel: 'Loans' },
   { to: '/reports', icon: <MdBarChart size={20} />, label: 'રિપોર્ટ', sublabel: 'Reports' },
   { to: '/settings', icon: <MdSettings size={20} />, label: 'સેટિંગ્સ', sublabel: 'Settings' },
 ];

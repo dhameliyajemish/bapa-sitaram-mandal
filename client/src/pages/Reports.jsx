@@ -7,7 +7,6 @@ const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractio
 const Reports = () => {
   const { list: transactions } = useSelector(s => s.transactions);
   const { list: members } = useSelector(s => s.members);
-  const { list: loans } = useSelector(s => s.loans);
 
   const exportCSV = () => {
     const headers = ['Member,Account No,Type,Amount,Month,Date,Note'];
@@ -96,38 +95,6 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* Loan Summary */}
-      {loans.length > 0 && (
-        <div className="card border-0 shadow-sm mt-4">
-          <div className="card-header bg-transparent fw-bold">🏦 લોન સારાંશ (Loan Summary)</div>
-          <div className="table-responsive">
-            <table className="table table-hover mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th>સભ્ય</th>
-                  <th>લોન</th>
-                  <th>EMI</th>
-                  <th>ભર્યો</th>
-                  <th>બાકી</th>
-                  <th>સ્થિતિ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loans.map(l => (
-                  <tr key={l._id}>
-                    <td>{l.memberId?.name}<br /><small className="text-muted">{l.memberId?.fataNo}</small></td>
-                    <td>{fmt(l.loanAmount)}</td>
-                    <td className="text-primary">{fmt(l.emiAmount)}</td>
-                    <td className="text-success">{fmt(l.paidAmount)}</td>
-                    <td className="text-danger">{fmt(l.remainingBalance)}</td>
-                    <td><span className={`badge ${l.status==='active'?'bg-primary':l.status==='closed'?'bg-success':'bg-danger'}`}>{l.status}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

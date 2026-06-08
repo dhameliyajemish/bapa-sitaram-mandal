@@ -11,7 +11,7 @@ import DashboardLayout from './components/Layout/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import MembersPage from './pages/MembersPage';
 import TransactionsPage from './pages/TransactionsPage';
-import LoansPage from './pages/Loans.jsx';
+
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 
@@ -45,7 +45,7 @@ const App = () => (
         <Route index                          element={<DashboardWithLoading />} />
         <Route path="members"                 element={<MembersPage />} />
         <Route path="transactions"            element={<TransactionsPage />} />
-        <Route path="loans"                   element={<LoansPage />} />
+
         <Route path="reports"                 element={<ReportsPage />} />
         <Route path="settings"                element={<SettingsPage />} />
       </Route>

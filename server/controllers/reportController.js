@@ -1,8 +1,4 @@
-const mongoose = require("mongoose");
-const Member = require("../models/Member");
-const MonthlyEntry = require("../models/MonthlyEntry");
-const Loan = require("../models/Loan");
-const Setting = require("../models/Setting");
+const { db } = require('../config/db');
 
 const fmtMoney = n => "?" + Number(n || 0).toFixed(2);
 const pad = (s, len) => s.padStart(len, " ");
@@ -69,20 +65,26 @@ const getMonthlyReport = async (req, res) => {
     const { month } = req.query;
     if (!month) return res.status(400).json({ message: "Month is required" });
 
-    const [members, entries, settings] = await Promise.all([
-      Member.find({}),
-      MonthlyEntry.find({ month }).populate("memberId", "name fataNo"),
-      Setting.findOne()
-    ]);
+    // Fetch members, entries for this month, settings
+    const members = db.prepare('SELECT * FROM members').all();
+    const settings = db.prepare('SELECT * FROM settings LIMIT 1').get();
 
     const creditRate = settings ? settings.creditInterestRate : 1;
     const debitRate = settings ? settings.debitInterestRate : 1;
 
     const memberMap = {};
-    members.forEach(m => { memberMap[m._id] = m; });
+    members.forEach(m => {
+      memberMap[m.id] = {
+        ...m,
+        _id: m.id,
+        isActive: m.isActive === 1
+      };
+    });
 
-    // Fetch all historical entries up to the target month to calculate running balances
-    const allHistoricalEntries = await MonthlyEntry.find({ month: { $lte: month } });
+    const entries = db.prepare('SELECT * FROM monthly_entries WHERE month = ?').all(month);
+
+    // Fetch historical entries up to target month
+    const allHistoricalEntries = db.prepare('SELECT * FROM monthly_entries WHERE month <= ?').all(month);
     
     const entriesByMember = {};
     allHistoricalEntries.forEach(e => {
@@ -93,7 +95,7 @@ const getMonthlyReport = async (req, res) => {
 
     let tHapto = 0, tUpad = 0, tVyaj = 0, tDand = 0;
     const rows = entries.map(e => {
-      const memberIdStr = String(e.memberId?._id || e.memberId);
+      const memberIdStr = String(e.memberId);
       const m = memberMap[memberIdStr] || {};
       tHapto += Number(e.hapto || 0);
       tUpad  += Number(e.upad  || 0);
@@ -101,7 +103,22 @@ const getMonthlyReport = async (req, res) => {
       tDand  += Number(e.dand  || 0);
       
       const balance = calculateChronologicalBalance(entriesByMember[memberIdStr], month, Number(m.openingBalance || 0), creditRate, debitRate);
-      return { ...e.toObject(), member: m, balance: Math.round(balance * 100) / 100 };
+      
+      return {
+        _id: e.id,
+        memberId: e.memberId,
+        month: e.month,
+        hapto: e.hapto,
+        upad: e.upad,
+        vyaj: e.vyaj,
+        creditVyaj: e.creditVyaj,
+        dand: e.dand,
+        total: e.total,
+        createdAt: e.createdAt,
+        updatedAt: e.updatedAt,
+        member: m,
+        balance: Math.round(balance * 100) / 100
+      };
     });
 
     // Sort rows numerically by member fataNo
@@ -131,8 +148,8 @@ const getYearlyReport = async (req, res) => {
     const { year } = req.query;
     if (!year) return res.status(400).json({ message: "Year is required" });
 
-    const members = await Member.find({});
-    const entries = await MonthlyEntry.find({ month: new RegExp("^" + year) }).populate("memberId", "name fataNo");
+    // Fetch entries starting with year (e.g. "2026-")
+    const entries = db.prepare("SELECT * FROM monthly_entries WHERE month LIKE ?").all(`${year}-%`);
 
     const monthlyMap = {};
     entries.forEach(e => {
@@ -150,8 +167,6 @@ const getYearlyReport = async (req, res) => {
       return { month: m, label: monthLabel(m), ...v };
     });
 
-    const loans = await Loan.aggregate([{$group: { _id: null, total: { $sum: "$amount" } } }]);
-
     res.json({
       year,
       months,
@@ -160,7 +175,7 @@ const getYearlyReport = async (req, res) => {
         totalUpad: yrUpad,
         totalVyaj: yrVyaj,
         totalDand: yrDand,
-        totalLoaned: loans[0]?.total || 0
+        totalLoaned: 0
       }
     });
   } catch (err) {
@@ -171,19 +186,18 @@ const getYearlyReport = async (req, res) => {
 const getMemberLedger = async (req, res) => {
   try {
     const { memberId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(memberId))
+    const parsedMemberId = parseInt(memberId, 10);
+    if (isNaN(parsedMemberId))
       return res.status(400).json({ message: "Invalid member ID" });
 
-    const [member, settings] = await Promise.all([
-      Member.findById(memberId),
-      Setting.findOne()
-    ]);
+    const member = db.prepare('SELECT * FROM members WHERE id = ?').get(parsedMemberId);
     if (!member) return res.status(404).json({ message: "Member not found" });
 
+    const settings = db.prepare('SELECT * FROM settings LIMIT 1').get();
     const creditRate = settings ? settings.creditInterestRate : 1;
     const debitRate = settings ? settings.debitInterestRate : 1;
 
-    const entries = await MonthlyEntry.find({ memberId }).sort({ month: 1 });
+    const entries = db.prepare('SELECT * FROM monthly_entries WHERE memberId = ? ORDER BY month ASC').all(parsedMemberId);
 
     let totalH = 0, totalU = 0, totalV = 0, totalD = 0;
     const rows = entries.map(e => {
@@ -195,14 +209,28 @@ const getMemberLedger = async (req, res) => {
       const runningBalance = calculateChronologicalBalance(entries, e.month, Number(member.openingBalance || 0), creditRate, debitRate);
 
       return {
-        _id: e._id, month: e.month,
-        hapto: e.hapto, upad: e.upad, vyaj: e.vyaj, dand: e.dand,
+        _id: e.id, 
+        month: e.month,
+        hapto: e.hapto, 
+        upad: e.upad, 
+        vyaj: e.vyaj, 
+        dand: e.dand,
         total: Math.round(runningBalance * 100) / 100
       };
     });
 
-    res.json({ member: { _id: member._id, name: member.name, fataNo: member.fataNo },
-               totalHapto: totalH, totalUpad: totalU, totalVyaj: totalV, totalDand: totalD, rows });
+    res.json({ 
+      member: { 
+        _id: member.id, 
+        name: member.name, 
+        fataNo: member.fataNo 
+      },
+      totalHapto: totalH, 
+      totalUpad: totalU, 
+      totalVyaj: totalV, 
+      totalDand: totalD, 
+      rows 
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -213,31 +241,68 @@ const getDashboardStats = async (req, res) => {
     const now = new Date();
     const currentMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
 
-    const [mCount, allEntries, monthEntries, loans, activeLoans] = await Promise.all([
-      Member.countDocuments(),
-      MonthlyEntry.find({}).populate("memberId", "name fataNo"),
-      MonthlyEntry.find({ month: currentMonth }).populate("memberId", "name fataNo"),
-      Loan.countDocuments(),
-      Loan.countDocuments({ status: "Active" }),
-    ]);
+    const mCountRes = db.prepare('SELECT COUNT(*) as count FROM members').get();
+
+    const allEntries = db.prepare('SELECT * FROM monthly_entries').all();
+    
+    // Fetch month entries with joined members
+    const monthEntriesRaw = db.prepare(`
+      SELECT 
+        me.*, 
+        m.name AS m_name, 
+        m.fataNo AS m_fataNo
+      FROM monthly_entries me
+      LEFT JOIN members m ON me.memberId = m.id
+      WHERE me.month = ?
+    `).all(currentMonth);
+
+    const monthEntries = monthEntriesRaw.map(e => ({
+      _id: e.id,
+      memberId: e.memberId ? {
+        _id: e.memberId,
+        name: e.m_name,
+        fataNo: e.m_fataNo
+      } : null,
+      month: e.month,
+      hapto: e.hapto,
+      upad: e.upad,
+      vyaj: e.vyaj,
+      creditVyaj: e.creditVyaj,
+      dand: e.dand,
+      total: e.total,
+      createdAt: e.createdAt,
+      updatedAt: e.updatedAt
+    }));
 
     let totalH = 0, totalU = 0, totalV = 0, totalD = 0;
     allEntries.forEach(e => {
-      totalH += Number(e.hapto || 0); totalU += Number(e.upad || 0);
-      totalV += Number(e.vyaj  || 0); totalD += Number(e.dand  || 0);
+      totalH += Number(e.hapto || 0); 
+      totalU += Number(e.upad || 0);
+      totalV += Number(e.vyaj  || 0); 
+      totalD += Number(e.dand  || 0);
     });
+
     const mTotalH = monthEntries.reduce((s, e) => s + Number(e.hapto || 0), 0);
     const mTotalU = monthEntries.reduce((s, e) => s + Number(e.upad  || 0), 0);
 
     res.json({
-      totalMembers: mCount,
-      totalHapto: totalH, totalUpad: totalU, totalVyaj: totalV, totalDand: totalD,
+      totalMembers: mCountRes.count,
+      totalHapto: totalH, 
+      totalUpad: totalU, 
+      totalVyaj: totalV, 
+      totalDand: totalD,
       totalDeposits: totalH,
       totalWithdrawals: totalU,
       netBalance: totalH - totalU + totalV + totalD,
-      thisMonth: { month: currentMonth, label: monthLabel(currentMonth),
-                   hapto: mTotalH, upad: mTotalU, entries: monthEntries.length },
-      totalLoans: loans, activeLoans,
+      thisMonth: { 
+        month: currentMonth, 
+        label: monthLabel(currentMonth),
+        hapto: mTotalH, 
+        upad: mTotalU, 
+        entries: monthEntries.length 
+      },
+      totalLoans: 0, 
+      activeLoans: 0,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -246,19 +311,18 @@ const getDashboardStats = async (req, res) => {
 
 const getMonthlyTrend = async (req, res) => {
   try {
-    const pipeline = [
-      {
-        $group: {
-          _id: "$month",
-          hapto: { $sum: "$hapto" },
-          upad:  { $sum: "$upad" },
-          vyaj:  { $sum: "$vyaj" },
-          dand:  { $sum: "$dand" },
-        }
-      },
-      { $sort: { _id: 1 } },
-    ];
-    const raw = await MonthlyEntry.aggregate(pipeline);
+    const raw = db.prepare(`
+      SELECT 
+        month AS _id,
+        SUM(hapto) AS hapto,
+        SUM(upad) AS upad,
+        SUM(vyaj) AS vyaj,
+        SUM(dand) AS dand
+      FROM monthly_entries
+      GROUP BY month
+      ORDER BY month ASC
+    `).all();
+
     const trend = raw.map(r => ({
       month: r._id, label: monthLabel(r._id),
       hapto: r.hapto, upad: r.upad, vyaj: r.vyaj, dand: r.dand
@@ -273,4 +337,3 @@ module.exports = {
   getMonthlyReport, getYearlyReport, getMemberLedger,
   getDashboardStats, getMonthlyTrend
 };
-
