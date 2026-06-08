@@ -51,7 +51,7 @@ const Members = () => {
 
   return (
     <div>
-      {/* Header */}
+      {}
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
           <h4 className="fw-bold mb-0">👥 સભ્ય વ્યવસ્થાપન (Members)</h4>
@@ -67,7 +67,7 @@ const Members = () => {
         </div>
       </div>
 
-      {/* Search */}
+      {}
       <div className="card border-0 shadow-sm mb-3 p-3">
         <div className="input-group">
           <span className="input-group-text bg-transparent"><MdSearch /></span>
@@ -76,7 +76,7 @@ const Members = () => {
         </div>
       </div>
 
-      {/* Table */}
+      {}
       <div className="card border-0 shadow-sm">
         <div className="table-responsive">
           <table className="table table-hover mb-0">
@@ -122,7 +122,7 @@ const Members = () => {
         </div>
       </div>
 
-      {/* Modal */}
+      {}
       {showModal && (
         <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-lg">

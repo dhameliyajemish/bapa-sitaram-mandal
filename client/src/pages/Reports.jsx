@@ -46,7 +46,7 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* Member-wise Summary */}
+      {}
       <div className="card border-0 shadow-sm">
         <div className="card-header bg-transparent fw-bold">👥 સભ્ય મુજબ સારાંશ (Member-wise Summary)</div>
         <div className="table-responsive">

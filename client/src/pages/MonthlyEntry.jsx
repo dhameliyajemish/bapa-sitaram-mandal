@@ -61,7 +61,7 @@ const MonthlyEntry = () => {
       });
       balance += net;
 
-      // increment month YYYY-MM
+      
       let [yr, mo] = currentMonth.split('-').map(Number);
       mo++;
       if (mo > 12) {
@@ -88,7 +88,7 @@ const MonthlyEntry = () => {
   const calculateAutoVyaj = (memberId, month, currentUpad = 0) => {
     if (!memberId || !month) return { creditVyaj: 0, debitVyaj: 0 };
     
-    // 1. Calculate interest on previous month's outstanding balance
+    
     const prevMonth = getPreviousMonth(month);
     const prevBalance = calculateMemberBalanceUpTo(memberId, prevMonth);
     
@@ -103,7 +103,7 @@ const MonthlyEntry = () => {
       debitVyaj = Math.round(Math.abs(prevBalance) * (debitRate / 100) * 100) / 100;
     }
     
-    // 2. Calculate interest on current month's new withdrawal
+    
     const debitRate = settings?.debitInterestRate ?? 1;
     const newUpad = Number(currentUpad) || 0;
     debitVyaj += Math.round(newUpad * (debitRate / 100) * 100) / 100;
@@ -164,7 +164,7 @@ const MonthlyEntry = () => {
       return numA - numB;
     });
 
-  // Calculate summary totals
+  
   const sumHapto = filteredEntries.reduce((sum, entry) => sum + Number(entry.hapto || 0), 0);
   const sumUpad = filteredEntries.reduce((sum, entry) => sum + Number(entry.upad || 0), 0);
   const sumCreditVyaj = filteredEntries.reduce((sum, entry) => sum + Number(entry.creditVyaj || 0), 0);
@@ -384,7 +384,7 @@ const MonthlyEntry = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    // Group entries by month
+    
     const monthGroups = {};
     entries.forEach(entry => {
       const key = entry.month;
@@ -394,14 +394,14 @@ const MonthlyEntry = () => {
 
     const sortedMonths = Object.keys(monthGroups).sort();
 
-    // Format month label
+    
     const formatMonthLabel = (m) => {
       const [yr, mo] = m.split('-');
       const monthsGuj = ['જાન્યુઆરી', 'ફેબ્રુઆરી', 'માર્ચ', 'એપ્રિલ', 'મે', 'જૂન', 'જુલાઈ', 'ઓગસ્ટ', 'સપ્ટેમ્બર', 'ઓક્ટોબર', 'નવેમ્બર', 'ડિસેમ્બર'];
       return `${monthsGuj[parseInt(mo) - 1]} ${yr}`;
     };
 
-    // Build one table body per month
+    
     const allMonthTables = sortedMonths.map(month => {
       let mSumHapto = 0, mSumUpad = 0, mSumCreditVyaj = 0, mSumVyaj = 0, mSumDand = 0;
       const sortedMEntries = [...monthGroups[month]].sort((a, b) => {
@@ -477,7 +477,7 @@ const MonthlyEntry = () => {
     const grandVyaj  = entries.reduce((s, e) => s + Number(e.vyaj  || 0), 0);
     const grandDand  = entries.reduce((s, e) => s + Number(e.dand  || 0), 0);
 
-    // Build per-member summary across ALL months
+    
     const memberSummary = {};
     entries.forEach(entry => {
       const member = members.find(m => m._id === entry.memberId?._id || m._id === entry.memberId);
@@ -623,7 +623,7 @@ const MonthlyEntry = () => {
       });
       
       if (res.data.simulated) {
-        // Fallback to wa.me if simulated (meaning no API credentials are in .env)
+        
         const text = `નમસ્તે ${member.name},\nતમારો ${entry.month} નો રીપોર્ટ:\nહપ્તો: ₹${entry.hapto}\nઉપાડ: ₹${entry.upad}\nજમા વ્યાજ: ₹${entry.creditVyaj || 0}\nઉપાડ વ્યાજ: ₹${entry.vyaj || 0}\nદંડ: ₹${entry.dand}\nકુલ બચત સિલક: ₹${balance.toFixed(2)}\n\nઆભાર,\nબાપા સીતારામ મંડળ`;
         const url = `https://wa.me/91${member.mobile}?text=${encodeURIComponent(text)}`;
         window.open(url, '_blank');
@@ -720,7 +720,7 @@ const MonthlyEntry = () => {
       if (res.data.simulated) {
         alert("દેમો મોડ: બધા સભ્યોના WhatsApp મેસેજ સર્વર કન્સોલમાં સફળતાપૂર્વક સિમ્યુલેટ (પ્રિન્ટ) થયા છે!");
         
-        // Sequentially offer sending via wa.me to let them send manually
+        
         for (const r of reports) {
           const text = `નમસ્તે ${r.memberName},\nતમારો ${r.month} નો રીપોર્ટ:\nહપ્તો: ₹${r.hapto}\nઉપાડ: ₹${r.upad}\nજમા વ્યાજ: ₹${r.creditVyaj || 0}\nઉપાડ વ્યાજ: ₹${r.vyaj || 0}\nદંડ: ₹${r.dand}\nકુલ બચત સિલક: ₹${r.total.toFixed(2)}\n\nઆભાર,\nબાપા સીતારામ મંડળ`;
           const url = `https://wa.me/91${r.mobile}?text=${encodeURIComponent(text)}`;
@@ -801,7 +801,7 @@ const MonthlyEntry = () => {
          </div>
        </div>
        
-       {/* Summary Totals Section */}
+       {}
        <div className="card" style={{ marginBottom: '1.5rem' }}>
          <h2 className="page-title" style={{ marginTop: 0, marginBottom: '1rem' }}>માસિક એન્ટ્રી બાપા (Monthly Summary)</h2>
          <div className="summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
@@ -855,7 +855,7 @@ const MonthlyEntry = () => {
                  const member = members.find(m => m._id === entry.memberId?._id || m._id === entry.memberId);
                  if (!member) return null;
 
-                 // Cumulative hapto and upad across ALL months for this member
+                 
                  const allMemberEntries = entries.filter(e =>
                    (e.memberId?._id || e.memberId) === (member._id)
                  );

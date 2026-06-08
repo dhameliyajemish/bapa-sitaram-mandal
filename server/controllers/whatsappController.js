@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-// Send single WhatsApp message
+
 const sendWhatsAppMessage = async (req, res) => {
   const { mobile, memberName, month, hapto, upad, vyaj, dand, total } = req.body;
 
@@ -41,9 +41,9 @@ const sendWhatsAppMessage = async (req, res) => {
   }
 };
 
-// Send WhatsApp messages to all members
+
 const sendAllWhatsAppMessages = async (req, res) => {
-  const { reports } = req.body; // Array: [{ mobile, memberName, month, hapto, upad, vyaj, dand, total }]
+  const { reports } = req.body; 
 
   if (!reports || !Array.isArray(reports) || reports.length === 0) {
     return res.status(400).json({ message: 'No reports provided' });

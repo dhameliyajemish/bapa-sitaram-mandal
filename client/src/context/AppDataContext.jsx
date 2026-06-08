@@ -38,7 +38,7 @@ export const AppDataProvider = ({ children }) => {
         axios.get(`${API_URL}/entries`, getAuthConfig()),
         axios.get(`${API_URL}/settings`, getAuthConfig())
       ]);
-      // Support both old API (array) and new API (object with data array)
+      
       const rawMembers = Array.isArray(membersRes.data) ? membersRes.data : membersRes.data.data || [];
       setMembers(sortMembersList(rawMembers));
       setEntries(Array.isArray(entriesRes.data) ? entriesRes.data : entriesRes.data.data || []);
@@ -77,7 +77,7 @@ export const AppDataProvider = ({ children }) => {
     try {
       await axios.delete(`${API_URL}/members/${id}`, getAuthConfig());
       setMembers(members.filter(m => m._id !== id));
-      // Optionally refetch entries to remove deleted member's entries from UI
+      
       fetchData();
     } catch (error) {
       console.error("Error deleting member", error);

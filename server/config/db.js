@@ -3,17 +3,27 @@ const fs = require('fs');
 const { DatabaseSync } = require('node:sqlite');
 let dbPath;
 
-if (process.env.DATABASE_PATH && process.env.NODE_ENV !== 'production') {
-  dbPath = process.env.DATABASE_PATH;
-} else {
+if (process.env.DATABASE_PATH) {
   try {
-    // Check if we are running inside Electron (main process)
+    const customPath = process.env.DATABASE_PATH;
+    const customDir = path.dirname(customPath);
+    if (fs.existsSync(customDir)) {
+      dbPath = customPath;
+    }
+  } catch (e) {
+    console.error('Error verifying custom DATABASE_PATH:', e.message);
+  }
+}
+
+if (!dbPath) {
+  try {
+    
     const { app } = require('electron');
     if (app) {
       dbPath = path.join(app.getPath('userData'), 'database.db');
     }
   } catch (e) {
-    // Fallback for standalone Express runner
+    
   }
 }
 
@@ -21,7 +31,6 @@ if (!dbPath) {
   dbPath = path.join(__dirname, '../database.db');
 }
 
-// Ensure the directory exists
 const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
@@ -32,7 +41,6 @@ const db = new DatabaseSync(dbPath);
 
 const connectDB = () => {
   try {
-    // 1. Admins Table
     db.exec(`
       CREATE TABLE IF NOT EXISTS admins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,7 +55,6 @@ const connectDB = () => {
       );
     `);
 
-    // 2. Members Table
     db.exec(`
       CREATE TABLE IF NOT EXISTS members (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,10 +71,8 @@ const connectDB = () => {
       );
     `);
 
-    // Drop loans table if it existed historically
     db.exec(`DROP TABLE IF EXISTS loans;`);
 
-    // 3. Monthly Entries Table
     db.exec(`
       CREATE TABLE IF NOT EXISTS monthly_entries (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,7 +90,6 @@ const connectDB = () => {
       );
     `);
 
-    // 4. Settings Table
     db.exec(`
       CREATE TABLE IF NOT EXISTS settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,7 +100,6 @@ const connectDB = () => {
       );
     `);
 
-    // 5. Transactions Table
     db.exec(`
       CREATE TABLE IF NOT EXISTS transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -114,7 +117,6 @@ const connectDB = () => {
       );
     `);
 
-    // Seed default settings if empty
     const settingsCount = db.prepare('SELECT COUNT(*) as count FROM settings').get();
     if (settingsCount.count === 0) {
       db.prepare('INSERT INTO settings (creditInterestRate, debitInterestRate) VALUES (?, ?)').run(1, 1);
@@ -127,4 +129,4 @@ const connectDB = () => {
   }
 };
 
-module.exports = { db, connectDB };
+module.exports = { db, connectDB, dbPath };

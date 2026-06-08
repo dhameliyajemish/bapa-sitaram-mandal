@@ -11,7 +11,7 @@ const monthLabel = m => {
 const calculateChronologicalBalance = (mEntries, targetMonth, openingBalance = 0, creditInterestRate = 1, debitInterestRate = 1) => {
   if ((!mEntries || mEntries.length === 0) && !openingBalance) return 0;
 
-  // Sort entries by month ascending
+  
   const sorted = mEntries && mEntries.length > 0 ? [...mEntries].sort((a, b) => a.month.localeCompare(b.month)) : [];
   
   if (sorted.length === 0) return Number(openingBalance || 0);
@@ -47,7 +47,7 @@ const calculateChronologicalBalance = (mEntries, targetMonth, openingBalance = 0
     });
     balance += net;
 
-    // increment month YYYY-MM
+    
     let [yr, mo] = currentMonth.split('-').map(Number);
     mo++;
     if (mo > 12) {
@@ -65,7 +65,7 @@ const getMonthlyReport = async (req, res) => {
     const { month } = req.query;
     if (!month) return res.status(400).json({ message: "Month is required" });
 
-    // Fetch members, entries for this month, settings
+    
     const members = db.prepare('SELECT * FROM members').all();
     const settings = db.prepare('SELECT * FROM settings LIMIT 1').get();
 
@@ -83,7 +83,7 @@ const getMonthlyReport = async (req, res) => {
 
     const entries = db.prepare('SELECT * FROM monthly_entries WHERE month = ?').all(month);
 
-    // Fetch historical entries up to target month
+    
     const allHistoricalEntries = db.prepare('SELECT * FROM monthly_entries WHERE month <= ?').all(month);
     
     const entriesByMember = {};
@@ -121,7 +121,7 @@ const getMonthlyReport = async (req, res) => {
       };
     });
 
-    // Sort rows numerically by member fataNo
+    
     rows.sort((a, b) => {
       const fataA = a.member?.fataNo || '';
       const fataB = b.member?.fataNo || '';
@@ -148,7 +148,7 @@ const getYearlyReport = async (req, res) => {
     const { year } = req.query;
     if (!year) return res.status(400).json({ message: "Year is required" });
 
-    // Fetch entries starting with year (e.g. "2026-")
+    
     const entries = db.prepare("SELECT * FROM monthly_entries WHERE month LIKE ?").all(`${year}-%`);
 
     const monthlyMap = {};
@@ -245,7 +245,7 @@ const getDashboardStats = async (req, res) => {
 
     const allEntries = db.prepare('SELECT * FROM monthly_entries').all();
     
-    // Fetch month entries with joined members
+    
     const monthEntriesRaw = db.prepare(`
       SELECT 
         me.*, 

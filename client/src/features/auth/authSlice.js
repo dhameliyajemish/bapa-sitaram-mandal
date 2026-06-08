@@ -4,7 +4,7 @@ import api from '../../services/api';
 export const register = createAsyncThunk('auth/register', async (credentials, { rejectWithValue }) => {
   try {
     const { data } = await api.post('/auth/register', credentials);
-    // Don't auto-login after register; just return success flag
+    
     return data;
   } catch (err) {
     return rejectWithValue(err.response?.data?.message || 'Registration failed');

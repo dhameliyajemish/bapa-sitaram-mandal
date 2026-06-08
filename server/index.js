@@ -12,7 +12,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// -- Routes --------------------------------------------------------------
+
 app.use('/api/auth',       require('./routes/authRoutes'));
 app.use('/api/members',    require('./routes/memberRoutes'));
 app.use('/api/entries',    require('./routes/entryRoutes'));
@@ -21,10 +21,10 @@ app.use('/api/admin',      require('./routes/adminRoutes'));
 app.use('/api/whatsapp',   require('./routes/whatsappRoutes'));
 app.use('/api/reports',    require('./routes/reportRoutes'));
 app.use('/api/settings',   require('./routes/settingRoutes'));
-// -------------------------------------------------------------------------
+
 const errorHandler = require('./middleware/errorHandler');
 
-// Serve static assets in production
+
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/dist')));
 
@@ -40,7 +40,7 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Global error handler
+
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;

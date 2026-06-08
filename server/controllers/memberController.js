@@ -1,7 +1,7 @@
 const { db } = require('../config/db');
 
-// @desc  Get all members (paginated + search)
-// @route GET /api/members
+
+
 exports.getMembers = async (req, res, next) => {
   try {
     const { page = 1, limit = 10000, search = '', isActive } = req.query;
@@ -22,11 +22,11 @@ exports.getMembers = async (req, res, next) => {
 
     const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
     
-    // Count total matching
+    
     const countQuery = db.prepare(`SELECT COUNT(*) as count FROM members ${whereSql}`);
     const total = countQuery.get(...params).count;
 
-    // Get paginated results sorted by fataNo numerically
+    
     const selectQuery = db.prepare(`
       SELECT * FROM members 
       ${whereSql} 
@@ -39,7 +39,7 @@ exports.getMembers = async (req, res, next) => {
     
     const members = selectQuery.all(...params, limitVal, offsetVal);
 
-    // Format output: map `id` to `_id` and boolean conversion for isActive
+    
     const formattedMembers = members.map(m => ({
       ...m,
       _id: m.id,
@@ -56,8 +56,8 @@ exports.getMembers = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// @desc  Get single member
-// @route GET /api/members/:id
+
+
 exports.getMember = async (req, res, next) => {
   try {
     const member = db.prepare('SELECT * FROM members WHERE id = ?').get(req.params.id);
@@ -73,14 +73,14 @@ exports.getMember = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// @desc  Create member
-// @route POST /api/members
+
+
 exports.createMember = async (req, res, next) => {
   try {
     const { fataNo, name, mobile, email, openingBalance, familyGroup, isActive } = req.body;
     let { memberId } = req.body;
 
-    // Auto-generate memberId if not provided
+    
     if (!memberId) {
       const countRes = db.prepare('SELECT COUNT(*) as count FROM members').get();
       memberId = `M-${1000 + countRes.count}`;
@@ -107,8 +107,8 @@ exports.createMember = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// @desc  Update member
-// @route PUT /api/members/:id
+
+
 exports.updateMember = async (req, res, next) => {
   try {
     const member = db.prepare('SELECT * FROM members WHERE id = ?').get(req.params.id);
@@ -149,8 +149,8 @@ exports.updateMember = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// @desc  Delete member
-// @route DELETE /api/members/:id
+
+
 exports.deleteMember = async (req, res, next) => {
   try {
     const member = db.prepare('SELECT * FROM members WHERE id = ?').get(req.params.id);

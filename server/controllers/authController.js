@@ -79,7 +79,7 @@ const forgotPassword = async (req, res, next) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = Date.now() + 15 * 60 * 1000; // 15 mins
+    const expires = Date.now() + 15 * 60 * 1000; 
 
     db.prepare('UPDATE admins SET resetPasswordOTP = ?, resetPasswordExpires = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?')
       .run(otp, expires, admin.id);

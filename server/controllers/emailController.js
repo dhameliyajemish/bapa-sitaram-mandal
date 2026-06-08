@@ -97,7 +97,7 @@ const sendAllMonthlyReports = async (req, res) => {
 
   const month = reports[0].month;
 
-  // Build rows for all members
+  
   let grandHapto = 0, grandUpad = 0, grandVyaj = 0, grandDand = 0, grandTotal = 0;
   const rowsHtml = reports.map(r => {
     grandHapto += Number(r.hapto || 0);

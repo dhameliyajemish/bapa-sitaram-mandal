@@ -58,7 +58,7 @@ const Register = () => {
       <div className="card border-0 shadow-lg" style={{ width: '100%', maxWidth: '480px', borderRadius: '20px' }}>
         <div className="card-body p-5">
 
-          {/* Header */}
+          {}
           <div className="text-center mb-4">
             <div style={{ fontSize: '3rem' }}>🏦</div>
             <h2 className="fw-bold" style={{ color: '#4f46e5', fontFamily: 'Hind Vadodara, sans-serif' }}>
@@ -71,7 +71,7 @@ const Register = () => {
 
           <form onSubmit={handleSubmit}>
             <div className="row g-3">
-              {/* Username */}
+              {}
               <div className="col-12">
                 <label className="form-label fw-semibold">👤 Admin Name (યુઝરનેમ)</label>
                 <input
@@ -81,7 +81,7 @@ const Register = () => {
                 />
               </div>
 
-              {/* Email */}
+              {}
               <div className="col-12">
                 <label className="form-label fw-semibold">📧 Email</label>
                 <input
@@ -91,7 +91,7 @@ const Register = () => {
                 />
               </div>
 
-              {/* Mandal Info */}
+              {}
               <div className="col-md-8">
                 <label className="form-label fw-semibold">🏦 મંડળ નામ (Mandal Name)</label>
                 <input
@@ -107,7 +107,7 @@ const Register = () => {
                 />
               </div>
 
-              {/* Password */}
+              {}
               <div className="col-12">
                 <label className="form-label fw-semibold">🔒 Password</label>
                 <div className="input-group">
@@ -123,7 +123,7 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Confirm Password */}
+              {}
               <div className="col-12">
                 <label className="form-label fw-semibold">🔒 Confirm Password</label>
                 <input
@@ -140,7 +140,7 @@ const Register = () => {
                 )}
               </div>
 
-              {/* Submit */}
+              {}
               <div className="col-12 mt-2">
                 <button
                   type="submit" className="btn btn-primary btn-lg w-100 fw-bold"
@@ -155,7 +155,7 @@ const Register = () => {
             </div>
           </form>
 
-          {/* Footer link */}
+          {}
           <div className="text-center mt-4">
             <span className="text-muted small">Already have an account? </span>
             <Link to="/login" className="text-primary fw-semibold text-decoration-none">Login →</Link>

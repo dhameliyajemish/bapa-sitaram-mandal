@@ -4,16 +4,16 @@ const fs = require('fs');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/mandalDB';
 
-// Initialize SQLite database and tables
+
 const { connectDB, db } = require('./db');
 
 async function migrate() {
   console.log('Starting MongoDB to SQLite Migration...');
   
-  // 1. Setup SQLite tables
+  
   connectDB();
 
-  // 2. Connect to MongoDB
+  
   try {
     await mongoose.connect(MONGO_URI);
     console.log('Connected to MongoDB.');
@@ -22,7 +22,7 @@ async function migrate() {
     process.exit(1);
   }
 
-  // 3. Define MongoDB schemas for reading
+  
   const AdminSchema = new mongoose.Schema({}, { strict: false });
   const MemberSchema = new mongoose.Schema({}, { strict: false });
   const EntrySchema = new mongoose.Schema({}, { strict: false });
@@ -35,11 +35,11 @@ async function migrate() {
   const MongoSetting = mongoose.models.Setting || mongoose.model('Setting', SettingSchema, 'settings');
   const MongoTransaction = mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema, 'transactions');
 
-  // Translation maps for MongoDB _id Hex to SQLite Integer primary keys
+  
   const memberIdMap = {};
   const adminIdMap = {};
 
-  // --- A. Migrate Admins ---
+  
   console.log('Migrating Admins...');
   const mongoAdmins = await MongoAdmin.find({});
   console.log(`Found ${mongoAdmins.length} Admins in MongoDB.`);
@@ -65,7 +65,7 @@ async function migrate() {
   }
   console.log('Admins migration complete.');
 
-  // --- B. Migrate Members ---
+  
   console.log('Migrating Members...');
   const mongoMembers = await MongoMember.find({});
   console.log(`Found ${mongoMembers.length} Members in MongoDB.`);
@@ -94,7 +94,7 @@ async function migrate() {
   }
   console.log('Members migration complete.');
 
-  // --- C. Migrate Settings ---
+  
   console.log('Migrating Settings...');
   const mongoSettings = await MongoSetting.find({});
   console.log(`Found ${mongoSettings.length} Settings in MongoDB.`);
@@ -115,7 +115,7 @@ async function migrate() {
   }
   console.log('Settings migration complete.');
 
-  // --- E. Migrate Monthly Entries ---
+  
   console.log('Migrating Monthly Entries...');
   const mongoEntries = await MongoEntry.find({});
   console.log(`Found ${mongoEntries.length} Monthly Entries in MongoDB.`);
@@ -150,7 +150,7 @@ async function migrate() {
   }
   console.log('Monthly entries migration complete.');
 
-  // --- F. Migrate Transactions ---
+  
   console.log('Migrating Transactions...');
   const mongoTransactions = await MongoTransaction.find({});
   console.log(`Found ${mongoTransactions.length} Transactions in MongoDB.`);

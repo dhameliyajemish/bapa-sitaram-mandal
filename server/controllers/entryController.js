@@ -43,7 +43,7 @@ const createEntry = async (req, res) => {
   try {
     const { memberId, month, hapto = 0, upad = 0, vyaj = 0, creditVyaj = 0, dand = 0 } = req.body;
     
-    // Auto-calculate total: hapto - upad + vyaj + dand
+    
     const total = Number(hapto) - Number(upad) + Number(vyaj) + Number(dand);
 
     const result = db.prepare(`

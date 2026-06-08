@@ -24,7 +24,7 @@ const DashboardLayout = () => {
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      setTime(`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`);
+      setTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`);
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
@@ -37,11 +37,11 @@ const DashboardLayout = () => {
   };
 
   const navItems = [
-    { to: '/',              icon: 'bi-speedometer2', label: 'ડેશબોર્ડ' },
-    { to: '/members',       icon: 'bi-people',        label: 'સભ્યો'    },
-    { to: '/transactions',  icon: 'bi-receipt',        label: 'એન્ટ્રી'  },
-    { to: '/reports',       icon: 'bi-graph-up',       label: 'રિપોર્ટ્સ'},
-    { to: '/settings',      icon: 'bi-gear',           label: 'સેટિંગ્સ'  },
+    { to: '/', icon: 'bi-speedometer2', label: 'ડેશબોર્ડ' },
+    { to: '/members', icon: 'bi-people', label: 'સભ્યો' },
+    { to: '/transactions', icon: 'bi-receipt', label: 'એન્ટ્રી' },
+    { to: '/reports', icon: 'bi-graph-up', label: 'રિપોર્ટ્સ' },
+    { to: '/settings', icon: 'bi-gear', label: 'સેટિંગ્સ' },
   ];
 
   return (
@@ -63,13 +63,12 @@ const DashboardLayout = () => {
         [data-theme="dark"] .topbar-user { color: #e2e8f0; }
       `}</style>
 
-      {/* ── Sidebar ── */}
       <nav className="sidebar d-flex flex-column h-100">
-        <div className="p-3 border-bottom" style={{borderColor:'rgba(255,255,255,.1)'}}>
+        <div className="p-3 border-bottom" style={{ borderColor: 'rgba(255,255,255,.1)' }}>
           <div className="d-flex align-items-center gap-3">
             <div className="sidebar-brand-icon"><i className="bi bi-bank"></i></div>
             <div>
-              <div className="text-white fw-bold small" style={{fontFamily:"'Hind Vadodara',sans-serif"}}>બાપા સીતારામ મંડળ</div>
+              <div className="text-white fw-bold small" style={{ fontFamily: "'Hind Vadodara',sans-serif" }}>બાપા સીતારામ મંડળ</div>
               <div className="sidebar-brand-sub">મેનેજમેન્ટ સિસ્ટમ</div>
             </div>
           </div>
@@ -87,12 +86,11 @@ const DashboardLayout = () => {
           ))}
         </div>
 
-        <div className="p-3 border-top" style={{borderColor:'rgba(255,255,255,.1)'}}>
+        <div className="p-3 border-top" style={{ borderColor: 'rgba(255,255,255,.1)' }}>
           <button onClick={handleLogout} className="btn btn-sm btn-outline-light w-100">Logout</button>
         </div>
       </nav>
 
-      {/* ── Main wrapper ── */}
       <div className="flex-grow-1 d-flex flex-column" style={{ marginLeft: '260px' }}>
         <header className="topbar border-bottom px-4 py-2 d-flex justify-content-between align-items-center">
           <div className="topbar-clock">{time}</div>

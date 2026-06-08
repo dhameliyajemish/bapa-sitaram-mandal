@@ -15,7 +15,7 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Mobile overlay toggle */}
+      {}
       <button
         className="btn btn-sm btn-outline-primary d-md-none position-fixed top-0 start-0 m-2 z-3"
         style={{ zIndex: 1050 }}
@@ -37,14 +37,14 @@ const Sidebar = () => {
           zIndex: 100,
         }}
       >
-        {/* Logo */}
+        {}
         <div className="px-3 py-4 text-white text-center border-bottom border-indigo-700" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
           <div style={{ fontSize: '1.8rem' }}>🏦</div>
           <div className="fw-bold" style={{ fontSize: '0.85rem', letterSpacing: '0.5px' }}>બાપા સીતારામ</div>
           <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>મંડળ Management v2</div>
         </div>
 
-        {/* Nav Items */}
+        {}
         <nav className="flex-grow-1 py-3">
           <ul className="list-unstyled m-0">
             {navItems.map(item => (
@@ -72,7 +72,7 @@ const Sidebar = () => {
           </ul>
         </nav>
 
-        {/* Footer */}
+        {}
         <div className="px-3 py-2 text-center" style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)' }}>
           મંડળ નં. 36 · v2.0
         </div>

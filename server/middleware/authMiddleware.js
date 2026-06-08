@@ -7,24 +7,23 @@ const protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
-      
+
       const admin = db.prepare('SELECT id, username, email, role, resetPasswordOTP, resetPasswordExpires, createdAt, updatedAt FROM admins WHERE id = ?').get(decoded.id);
-      
+
       if (!admin) {
         return res.status(401).json({ message: 'Not authorized, user not found' });
       }
-      
+
       req.admin = {
         ...admin,
-        _id: admin.id // Mapping id to _id for frontend compatibility
+        _id: admin.id
       };
-      
+
       next();
     } catch (error) {
       return res.status(401).json({ message: 'Not authorized, token failed' });
     }
   } else {
-    // If no token was found in authorization header
     if (!token) {
       return res.status(401).json({ message: 'Not authorized, no token' });
     }

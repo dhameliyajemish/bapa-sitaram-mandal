@@ -1,7 +1,7 @@
 const { db } = require('../config/db');
 
-// @desc  Get all transactions (with filters)
-// @route GET /api/transactions
+
+
 exports.getTransactions = async (req, res, next) => {
   try {
     const { month, memberId, type, page = 1, limit = 100 } = req.query;
@@ -67,8 +67,8 @@ exports.getTransactions = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// @desc  Add transaction
-// @route POST /api/transactions
+
+
 exports.addTransaction = async (req, res, next) => {
   try {
     const { memberId, type, amount, month, date, note } = req.body;
@@ -114,8 +114,8 @@ exports.addTransaction = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// @desc  Delete transaction
-// @route DELETE /api/transactions/:id
+
+
 exports.deleteTransaction = async (req, res, next) => {
   try {
     const tx = db.prepare('SELECT * FROM transactions WHERE id = ?').get(req.params.id);
@@ -126,13 +126,13 @@ exports.deleteTransaction = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// @desc  Dashboard summary (aggregated)
-// @route GET /api/transactions/summary
+
+
 exports.getSummary = async (req, res, next) => {
   try {
     const currentMonth = new Date().toISOString().slice(0, 7);
 
-    // Aggregate totals
+    
     const agg = db.prepare(`
       SELECT 
         SUM(CASE WHEN type = 'deposit' THEN amount ELSE 0 END) AS totalDeposit,
@@ -142,7 +142,7 @@ exports.getSummary = async (req, res, next) => {
       FROM transactions
     `).get();
 
-    // Aggregate month totals
+    
     const monthAgg = db.prepare(`
       SELECT 
         SUM(CASE WHEN type = 'deposit' THEN amount ELSE 0 END) AS monthDeposit,
@@ -154,7 +154,7 @@ exports.getSummary = async (req, res, next) => {
     const memberCountRes = db.prepare('SELECT COUNT(*) as count FROM members WHERE isActive = 1').get();
     const memberCount = memberCountRes.count;
 
-    // Monthly trend (last 6 months deposits)
+    
     const trendRows = db.prepare(`
       SELECT month AS _id, SUM(amount) AS total
       FROM transactions
@@ -164,7 +164,7 @@ exports.getSummary = async (req, res, next) => {
       LIMIT 6
     `).all();
 
-    // Reverse trend to be chronological
+    
     const trend = trendRows.map(r => ({
       _id: r._id,
       total: r.total
@@ -187,8 +187,8 @@ exports.getSummary = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// @desc  Member ledger (all transactions for a member)
-// @route GET /api/transactions/ledger/:memberId
+
+
 exports.getMemberLedger = async (req, res, next) => {
   try {
     const member = db.prepare('SELECT * FROM members WHERE id = ?').get(req.params.memberId);

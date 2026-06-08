@@ -21,7 +21,7 @@ const LoansPage = () => {
 
   useEffect(() => { dispatch(loadMembers()); dispatch(loadLoans()); dispatch(loadLoanStats()); }, [dispatch]);
 
-  /* ── stats cards ─────────────────────────────── */
+  
   const statCards = [
     { label: 'કુલ લોન (Total Loans)',  value: stats?.totalLoaned    || 0, cls: 'text-primary' },
     { label: 'ચુકવણી (Total Paid)',    value: stats?.totalPaid      || 0, cls: 'text-success' },
@@ -29,7 +29,7 @@ const LoansPage = () => {
     { label: 'એક્ટિવ લોન (Active)',     value: stats?.activeLoans    || 0, cls: 'text-warning' },
   ];
 
-  /* ── filters ─────────────────────────────────── */
+  
   const filtered = (loans && Array.isArray(loans) ? loans : []).filter(l => {
     const memberIdStr = l.memberId?._id || l.memberId;
     const m = (members && Array.isArray(members) ? members : []).find(mem => mem._id === memberIdStr) || (l.memberId && typeof l.memberId === 'object' ? l.memberId : null);
@@ -38,7 +38,7 @@ const LoansPage = () => {
     return nameOk && statOk;
   });
 
-  /* ── handlers ────────────────────────────────── */
+  
   const calcEMI = () => {
     const P   = Number(form.amount)         || 0;
     const rate = Number(form.interestRate)   || 0;
@@ -106,7 +106,7 @@ const LoansPage = () => {
         </button>
       </div>
 
-      {/* Stats */}
+      {}
       <div className="row row-cols-2 row-cols-md-4 g-3 mb-4">
         {statCards.map((s, i) => (
           <div className="col" key={i}>
@@ -118,7 +118,7 @@ const LoansPage = () => {
         ))}
       </div>
 
-      {/* Filter bar */}
+      {}
       <div className="card p-3 mb-4 d-flex flex-wrap gap-3 align-items-center">
         <select className="form-select w-auto" value={filterSt} onChange={e => setFilterSt(e.target.value)}>
           <option value="">બધા સ્ટેટસ (All Status)</option>
@@ -132,7 +132,7 @@ const LoansPage = () => {
         </div>
       </div>
 
-      {/* Loan table */}
+      {}
       <div className="card shadow-sm">
         <div className="card-body p-0">
           <div className="table-responsive">
@@ -174,7 +174,7 @@ const LoansPage = () => {
         </div>
       </div>
 
-      {/* Add / Edit loan form modal */}
+      {}
       {showForm &&
         <div className="modal-overlay" onClick={() => setShowForm(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
@@ -232,7 +232,7 @@ const LoansPage = () => {
         </div>
       }
 
-      {/* Payment modal */}
+      {}
       {showPay &&
         <div className="modal-overlay" onClick={() => setShowPay(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>

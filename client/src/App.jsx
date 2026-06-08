@@ -15,14 +15,14 @@ import TransactionsPage from './pages/TransactionsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 
-/* ── ProtectedRoute ─────────────────────────────────────────── */
+
 const ProtectedRoute = ({ children }) => {
   const { token } = useSelector(state => state.auth);
   if (!token) return <Navigate to="/login" replace />;
   return children;
 };
 
-/* ── DashboardLayout wrapper that dispatches initial data loads ── */
+
 const DashboardWithLoading = () => {
   const dispatch  = useDispatch();
   const { loading: authLoading } = useSelector((s) => s.auth);

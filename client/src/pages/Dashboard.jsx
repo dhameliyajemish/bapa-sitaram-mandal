@@ -4,66 +4,26 @@ import { loadMembers } from '../redux/slices/memberSlice.js';
 import { loadEntries } from '../redux/slices/entrySlice.js';
 import helpers from '../utils/helpers';
 
-/**
- * Dashboard Page Component
- * 
- * This component displays key statistics and analytics for the mandal management system.
- * It uses Redux Toolkit for state management and computes all stats from the Redux store.
- * 
- * Features:
- * - 6 StatCards displaying member, deposit, withdrawal, loan, and balance information
- * - Monthly trend chart using inline SVG bars
- * - Dark mode toggle
- * - Loading and error states
- * 
- * Stats are computed purely from Redux state using reduce() on arrays:
- * - Total Members: members.list.length
- * - Total Deposits: sum of hapto from entries
- * - Total Withdrawals: sum of upad from entries  
- * - Net Balance: Deposits minus Withdrawals
- * - Active Loans: count of loans with status 'Active'
- * - Total Loan Amount: sum of loan.amount
- */
 
-/**
- * Format currency values for display
- * @param {number} n - Value to format
- * @returns {string} Formatted currency string
- */
+
+
 function fmt(n) {
   return 'Rs ' + Number(n || 0).toLocaleString('en-IN');
 }
 
-/**
- * Calculate percentage change between current and previous values
- * @param {number} current - Current value
- * @param {number} previous - Previous value
- * @returns {string} Formatted percentage change or N/A
- */
+
 function calcPercentChange(current, previous) {
   if (!previous || previous === 0) return 'N/A';
   const change = ((current - previous) / previous) * 100;
   return change.toFixed(1) + '%';
 }
 
-/**
- * Get a color based on value (positive = green, negative = red)
- * @param {number} value - Value to check
- * @returns {string} CSS color value
- */
+
 function getValueColor(value) {
   return value >= 0 ? '#10b981' : '#ef4444';
 }
 
-/**
- * StatCard Component - Displays a single statistic in a card
- * @param {object} props - Component props
- * @param {string} props.title - Card title
- * @param {string|number} props.value - Value to display
- * @param {string} props.icon - Emoji or icon character
- * @param {string} props.color - CSS color for the value
- * @param {string} props.sub - Optional subtitle
- */
+
 const StatCard = ({ title, value, icon, color, sub }) => (
   <div className="col-12 col-sm-6 col-lg-4 col-xl-2">
     <div className="stat-card border-0 shadow-sm h-100 d-flex align-items-center gap-3 p-3">
@@ -77,14 +37,7 @@ const StatCard = ({ title, value, icon, color, sub }) => (
   </div>
 );
 
-/**
- * SimpleBarChart Component - Displays a bar chart using inline bars
- * Built using raw React DOM elements, NOT Chart.js
- * @param {object} props - Component props
- * @param {number[]} props.data - Array of values for each bar
- * @param {string[]} props.labels - Labels for each bar
- * @param {string} props.title - Chart title
- */
+
 const SimpleBarChart = ({ data, labels, title }) => {
   const maxValue = Math.max(...data, 1);
   const hasData = data.some(v => v > 0);
@@ -114,12 +67,7 @@ const SimpleBarChart = ({ data, labels, title }) => {
   );
 };
 
-/**
- * SummaryCard Component - Displays a list of summary items
- * @param {object} props - Component props
- * @param {string} props.title - Card title
- * @param {Array} props.items - Array of {label, value, positive?, negative?}
- */
+
 const SummaryCard = ({ title, items }) => (
   <div className="card border-0 shadow-sm">
     <div className="card-header bg-transparent border-0 fw-bold">{title}</div>
@@ -134,14 +82,11 @@ const SummaryCard = ({ title, items }) => (
   </div>
 );
 
-/**
- * Dashboard Main Component
- * Connects to Redux store and displays all dashboard statistics
- */
+
 const Dashboard = () => {
   const dispatch = useDispatch();
   
-  // Redux state selectors - using direct state paths as required
+  
   const members = useSelector((state) => state.members?.list || []);
   const membersLoading = useSelector((state) => state.members?.loading);
   const membersError = useSelector((state) => state.members?.error);
@@ -149,13 +94,13 @@ const Dashboard = () => {
   const entriesLoading = useSelector((state) => state.entries?.loading);
   const entriesError = useSelector((state) => state.entries?.error);
   
-  // Load data on component mount
+  
   useEffect(() => {
     dispatch(loadMembers());
     dispatch(loadEntries());
   }, [dispatch]);
   
-  // Memoized calculations for stats - all computed from Redux state
+  
   const stats = useMemo(() => {
     const totalMembers = members.length;
     const totalDeposits = entries.reduce((sum, e) => sum + Number(e.hapto || 0), 0);
@@ -174,7 +119,7 @@ const Dashboard = () => {
     };
   }, [members, entries]);
   
-  // Monthly data for chart using helpers.getLast12Months()
+  
   const { monthlyDeposits, chartLabels } = useMemo(() => {
     const months = helpers.getLast12Months();
     const deposits = months.map(month => {
@@ -192,7 +137,7 @@ const Dashboard = () => {
   const isLoading = membersLoading || entriesLoading;
   const hasError = membersError || entriesError;
   
-  // Summary items for side cards
+  
   const summaryItems = [
     { label: 'Total Members', value: (stats.totalMembers || 0).toString() },
     { label: 'Total Entries', value: (entries.length || 0).toString() }
@@ -206,7 +151,7 @@ const Dashboard = () => {
   
   return (
     <div>
-      {/* Header Section */}
+      {}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h4 className="fw-bold mb-0">Dashboard</h4>
@@ -214,12 +159,12 @@ const Dashboard = () => {
         </div>
       </div>
       
-      {/* Error Alert */}
+      {}
       {hasError && (
         <div className="alert alert-danger">Error loading data. Please refresh the page.</div>
       )}
       
-      {/* Loading State */}
+      {}
       {isLoading ? (
         <div className="text-center py-5">
           <div className="spinner-border text-primary" role="status">
@@ -229,7 +174,7 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
-          {/* Stat Cards Grid - 5 cards in a row */}
+          {}
           <div className="row g-3 mb-4">
             <StatCard title="Total Members" value={stats.totalMembers} icon="👥" color="#6366f1" sub="Active members"/>
             <StatCard title="Total Deposits" value={fmt(stats.totalDeposits)} icon="💰" color="#10b981" sub={fmt(stats.totalInterest) + ' interest'}/>
@@ -238,12 +183,12 @@ const Dashboard = () => {
             <StatCard title="Total Penalty" value={fmt(stats.totalPenalty)} icon="⚠️" color="#f97316"/>
           </div>
           
-          {/* Monthly Chart */}
+          {}
           <div className="mb-4">
             <SimpleBarChart data={monthlyDeposits} labels={chartLabels} title="Monthly Deposit Trend (Last 12 Months)"/>
           </div>
           
-          {/* Summary Cards */}
+          {}
           <div className="row g-3">
             <div className="col-md-6">
               <SummaryCard title="Member Summary" items={summaryItems}/>

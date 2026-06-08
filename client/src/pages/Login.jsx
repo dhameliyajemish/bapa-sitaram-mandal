@@ -9,17 +9,17 @@ const Login = () => {
   const navigate = useNavigate();
   const { token, loading, error } = useSelector(s => s.auth);
   
-  // View states: 'login' | 'forgot' | 'reset'
+  
   const [view, setView] = useState('login');
   
-  // Login Form
+  
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPass, setShowPass] = useState(false);
 
-  // Forgot Password Form
+  
   const [forgotEmail, setForgotEmail] = useState('');
 
-  // Reset Password Form
+  
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -28,7 +28,7 @@ const Login = () => {
     dispatch(clearError());
   }, [dispatch, view]);
 
-  // Redirect if logged in
+  
   useEffect(() => {
     if (token) {
       navigate('/');
@@ -70,7 +70,7 @@ const Login = () => {
       const res = await dispatch(resetPassword({ email: forgotEmail, otp, newPassword })).unwrap();
       toast.success(res?.message || 'Password reset successfully!');
       setView('login');
-      // Clear forms
+      
       setOtp('');
       setNewPassword('');
       setConfirmPassword('');
@@ -85,7 +85,7 @@ const Login = () => {
       style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4f46e5 100%)' }}>
       <div className="card border-0 shadow-lg" style={{ width: '100%', maxWidth: '440px', borderRadius: '20px' }}>
         <div className="card-body p-5">
-          {/* Logo */}
+          {}
           <div className="text-center mb-4">
             <div style={{ fontSize: '3rem' }}>🏦</div>
             <h2 className="fw-bold" style={{ color: '#4f46e5', fontFamily: 'Hind Vadodara, sans-serif' }}>
@@ -104,7 +104,7 @@ const Login = () => {
             <div className="alert alert-danger py-2 small">⚠️ {error}</div>
           )}
 
-          {/* ── View: Login ── */}
+          {}
           {view === 'login' && (
             <form onSubmit={handleLoginSubmit}>
               <div className="mb-3">
@@ -148,7 +148,7 @@ const Login = () => {
             </form>
           )}
 
-          {/* ── View: Forgot Password ── */}
+          {}
           {view === 'forgot' && (
             <form onSubmit={handleForgotSubmit}>
               <p className="text-muted small mb-4 text-center">
@@ -182,7 +182,7 @@ const Login = () => {
             </form>
           )}
 
-          {/* ── View: Reset Password ── */}
+          {}
           {view === 'reset' && (
             <form onSubmit={handleResetSubmit}>
               <p className="text-muted small mb-4 text-center">
@@ -244,7 +244,7 @@ const Login = () => {
             </form>
           )}
 
-          {/* Register link (Only show on main login view) */}
+          {}
           {view === 'login' && (
             <div className="text-center mt-4">
               <span className="text-muted small">Don't have an account? </span>

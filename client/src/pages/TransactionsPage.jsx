@@ -25,7 +25,7 @@ const MonthlyEntry = () => {
   const [broadcastEmailLoading, setBroadcastEmailLoading] = useState(false);
   const [broadcastWhatsAppLoading, setBroadcastWhatsAppLoading] = useState(false);
 
-  /* ── computed ─────────────────────────────── */
+  
   const sortEntriesByFataNo = (list) => {
     return [...list].sort((a, b) => {
       const memA = members.find(m => String(m._id) === String(a.memberId?._id || a.memberId)) || (a.memberId && typeof a.memberId === 'object' ? a.memberId : null);
@@ -61,7 +61,7 @@ const MonthlyEntry = () => {
   const calcTotal = (e) => Number(e.hapto || 0) - Number(e.upad || 0) + Number(e.vyaj || 0) + Number(e.dand || 0);
   const netTotal  = sumHapto - sumUpad + sumVyaj + sumDand;
 
-  /* ── effects ───────────────────────────────── */
+  
   useEffect(() => {
     dispatch(loadMembers());
     dispatch(loadEntries());
@@ -73,7 +73,7 @@ const MonthlyEntry = () => {
     }
   }, [selectedMonth, dispatch]);
 
-  /* ── handlers ──────────────────────────────── */
+  
   const handleSave = async (e) => {
     e.preventDefault();
     try {
@@ -143,7 +143,7 @@ const MonthlyEntry = () => {
       });
       balance += net;
 
-      // increment month YYYY-MM
+      
       let [yr, mo] = currentMonth.split('-').map(Number);
       mo++;
       if (mo > 12) {
@@ -170,7 +170,7 @@ const MonthlyEntry = () => {
   const calculateAutoVyaj = (memberId, month, currentUpad = 0) => {
     if (!memberId || !month) return { creditVyaj: 0, debitVyaj: 0 };
     
-    // 1. Calculate interest on previous month's outstanding balance
+    
     const prevMonth = getPreviousMonth(month);
     const prevBalance = calculateMemberBalanceUpTo(memberId, prevMonth);
     
@@ -185,7 +185,7 @@ const MonthlyEntry = () => {
       debitVyaj = Math.round(Math.abs(prevBalance) * (debitRate / 100) * 100) / 100;
     }
     
-    // 2. Calculate interest on current month's new withdrawal
+    
     const debitRate = settings?.debitInterestRate ?? 1;
     const newUpad = Number(currentUpad) || 0;
     debitVyaj += Math.round(newUpad * (debitRate / 100) * 100) / 100;
@@ -210,7 +210,7 @@ const MonthlyEntry = () => {
       }, getAuthConfig());
       
       if (res.data.simulated) {
-        // Fallback to wa.me if simulated
+        
         const text = `નમસ્તે ${member.name},\nતમારો ${entry.month} નો રીપોર્ટ:\nહપ્તો: ₹${entry.hapto}\nઉપાડ: ₹${entry.upad}\nજમા વ્યાજ: ₹${entry.creditVyaj || 0}\nઉપાડ વ્યાજ: ₹${entry.vyaj || 0}\nદંડ: ₹${entry.dand}\nકુલ બચત સિલક: ₹${balance.toFixed(2)}\n\nઆભાર,\nબાપા સીતારામ મંડળ`;
         const url = `https://wa.me/91${member.mobile}?text=${encodeURIComponent(text)}`;
         window.open(url, '_blank');
@@ -255,7 +255,7 @@ const MonthlyEntry = () => {
       if (res.data.simulated) {
         toast.success("દેમો મોડ: બધા સભ્યોના WhatsApp મેસેજ સર્વર કન્સોલમાં સફળતાપૂર્વક સિમ્યુલેટ (પ્રિન્ટ) થયા છે!");
         
-        // Sequentially offer sending via wa.me to let them send manually
+        
         for (const r of reports) {
           const text = `નમસ્તે ${r.memberName},\nતમારો ${r.month} નો રીપોર્ટ:\nહપ્તો: ₹${r.hapto}\nઉપાડ: ₹${r.upad}\nજમા વ્યાજ: ₹${r.creditVyaj || 0}\nઉપાડ વ્યાજ: ₹${r.vyaj || 0}\nદંડ: ₹${r.dand}\nકુલ બચત સિલક: ₹${r.total.toFixed(2)}\n\nઆભાર,\nબાપા સીતારામ મંડળ`;
           const url = `https://wa.me/91${r.mobile}?text=${encodeURIComponent(text)}`;
@@ -772,14 +772,14 @@ const MonthlyEntry = () => {
     printWindow.document.close();
   };
 
-  /* ── member list for select ─────────────────── */
+  
   const memberOptions = members.filter(m =>
     !searchTerm || m.name?.toLowerCase().includes(searchTerm.toLowerCase()) || m.fataNo?.includes(searchTerm)
   );
 
   return (
     <div>
-      {/* Page header */}
+      {}
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <h2 className="mb-0">માસિક એન્ટ્રી (Monthly Entry)</h2>
         <div className="d-flex flex-wrap gap-2">
@@ -801,7 +801,7 @@ const MonthlyEntry = () => {
         </div>
       </div>
 
-      {/* Month picker + search */}
+      {}
       <div className="card p-3 mb-4 d-flex flex-wrap gap-3 align-items-center">
         <div className="d-flex align-items-center gap-2">
           <label className="mb-0 fw-semibold">મહિનો:</label>
@@ -813,7 +813,7 @@ const MonthlyEntry = () => {
         </div>
       </div>
 
-      {/* Summary stat cards */}
+      {}
       <div className="row row-cols-2 row-cols-md-6 g-3 mb-4">
         {[
           { label: 'હપ્તો', value: sumHapto, cls: 'text-primary' },
@@ -832,7 +832,7 @@ const MonthlyEntry = () => {
         ))}
       </div>
 
-      {/* Entries table */}
+      {}
       <div className="card shadow-sm">
         <div className="card-body p-0">
           <div className="table-responsive">
@@ -884,7 +884,7 @@ const MonthlyEntry = () => {
         </div>
       </div>
 
-      {/* Add Entry Modal */}
+      {}
       {showModal &&
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>

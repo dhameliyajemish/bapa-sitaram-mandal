@@ -3,7 +3,7 @@ const router = express.Router();
 const { db } = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
 
-// Backup Endpoint
+
 router.get('/backup', protect, async (req, res) => {
   try {
     const members = db.prepare('SELECT * FROM members').all().map(m => ({
@@ -27,7 +27,7 @@ router.get('/backup', protect, async (req, res) => {
   }
 });
 
-// Restore Endpoint
+
 router.post('/restore', protect, async (req, res) => {
   const { members, entries } = req.body;
   
@@ -36,11 +36,11 @@ router.post('/restore', protect, async (req, res) => {
   }
 
   try {
-    // Clear current database tables
+    
     db.prepare('DELETE FROM members').run();
     db.prepare('DELETE FROM monthly_entries').run();
 
-    // Restore members
+    
     if (members.length > 0) {
       const insertMember = db.prepare(`
         INSERT INTO members (id, memberId, fataNo, name, mobile, email, openingBalance, familyGroup, isActive, createdAt, updatedAt)
@@ -67,7 +67,7 @@ router.post('/restore', protect, async (req, res) => {
       }
     }
     
-    // Restore entries
+    
     if (entries.length > 0) {
       const insertEntry = db.prepare(`
         INSERT INTO monthly_entries (id, memberId, month, hapto, upad, vyaj, creditVyaj, dand, total, createdAt, updatedAt)
