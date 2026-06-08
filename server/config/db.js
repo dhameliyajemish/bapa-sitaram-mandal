@@ -95,10 +95,18 @@ const connectDB = () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         creditInterestRate REAL DEFAULT 1,
         debitInterestRate REAL DEFAULT 1,
+        penaltyAmount REAL DEFAULT 100,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    try {
+      db.exec(`ALTER TABLE settings ADD COLUMN penaltyAmount REAL DEFAULT 100;`);
+      console.log('Added penaltyAmount column to settings table.');
+    } catch (e) {
+      // Column might already exist, ignore error
+    }
 
     db.exec(`
       CREATE TABLE IF NOT EXISTS transactions (
@@ -119,7 +127,7 @@ const connectDB = () => {
 
     const settingsCount = db.prepare('SELECT COUNT(*) as count FROM settings').get();
     if (settingsCount.count === 0) {
-      db.prepare('INSERT INTO settings (creditInterestRate, debitInterestRate) VALUES (?, ?)').run(1, 1);
+      db.prepare('INSERT INTO settings (creditInterestRate, debitInterestRate, penaltyAmount) VALUES (?, ?, ?)').run(1, 1, 100);
       console.log('Seeded default settings.');
     }
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AppDataContext } from '../context/AppDataContext';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { MdSettings, MdSave, MdTrendingUp, MdTrendingDown, MdBackup, MdCloudDownload, MdCloudUpload } from 'react-icons/md';
+import { MdSettings, MdSave, MdTrendingUp, MdTrendingDown, MdBackup, MdCloudDownload, MdCloudUpload, MdWarning } from 'react-icons/md';
 
 const API_URL = import.meta.env.DEV ? 'http://localhost:5000/api' : '/api';
 
@@ -10,6 +10,7 @@ const SettingsPage = () => {
   const { settings, updateSettings, fetchData } = useContext(AppDataContext);
   const [creditRate, setCreditRate] = useState(1);
   const [debitRate, setDebitRate] = useState(1);
+  const [penaltyAmt, setPenaltyAmt] = useState(100);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -18,6 +19,7 @@ const SettingsPage = () => {
     if (settings) {
       setCreditRate(settings.creditInterestRate ?? 1);
       setDebitRate(settings.debitInterestRate ?? 1);
+      setPenaltyAmt(settings.penaltyAmount ?? 100);
     }
   }, [settings]);
 
@@ -86,7 +88,8 @@ const SettingsPage = () => {
     try {
       await updateSettings({
         creditInterestRate: Number(creditRate),
-        debitInterestRate: Number(debitRate)
+        debitInterestRate: Number(debitRate),
+        penaltyAmount: Number(penaltyAmt)
       });
       toast.success('સેટિંગ્સ સફળતાપૂર્વક અપડેટ થયા! (Settings updated!)');
     } catch (err) {
@@ -107,8 +110,8 @@ const SettingsPage = () => {
         <form onSubmit={handleSave}>
           <div className="row g-4">
             
-            {}
-            <div className="col-md-6">
+            {/* Credit Rate Card */}
+            <div className="col-md-4">
               <div className="p-3 border rounded-3 bg-light bg-opacity-50 h-100 d-flex flex-column justify-content-between">
                 <div>
                   <div className="d-flex align-items-center gap-2 text-success mb-2">
@@ -116,7 +119,7 @@ const SettingsPage = () => {
                     <h5 className="fw-bold mb-0">જમા વ્યાજ દર (Credit Interest)</h5>
                   </div>
                   <p className="text-muted small">
-                    સભ્યોના જમા બેલેન્સ પર દર મહિને ગણાતું વ્યાજ (દા.ત. ૧% વ્યાજ દર નક્કી કર્યો હોય, તો બેલેન્સ ૧.૦૧ ગણું થશે).
+                    સભ્યોના જમા બેલેન્સ પર દર મહિને ગણાતું વ્યાજ (દા.ત. {creditRate}% વ્યાજ દર નક્કી કર્યો હોય, તો બેલેન્સ {(1 + Number(creditRate)/100).toFixed(4)} ગણું થશે).
                   </p>
                 </div>
                 <div className="input-group mt-3">
@@ -135,8 +138,8 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            {}
-            <div className="col-md-6">
+            {/* Debit Rate Card */}
+            <div className="col-md-4">
               <div className="p-3 border rounded-3 bg-light bg-opacity-50 h-100 d-flex flex-column justify-content-between">
                 <div>
                   <div className="d-flex align-items-center gap-2 text-danger mb-2">
@@ -144,7 +147,7 @@ const SettingsPage = () => {
                     <h5 className="fw-bold mb-0">ઉપાડ વ્યાજ દર (Debit Interest)</h5>
                   </div>
                   <p className="text-muted small">
-                    સભ્યો દ્વારા લેવામાં આવેલ ઉપાડ (Withdrawal) પર ચાર્જ થતું વ્યાજ (દા.ત. ૧% વ્યાજ દર હોય, તો ઉપાડની રકમ પર ૧% વ્યાજ ગણાશે).
+                    સભ્યો દ્વારા લેવામાં આવેલ ઉપાડ (Withdrawal) પર ચાર્જ થતું વ્યાજ (દા.ત. {debitRate}% વ્યાજ દર હોય, તો ઉપાડની રકમ પર {debitRate}% વ્યાજ ગણાશે).
                   </p>
                 </div>
                 <div className="input-group mt-3">
@@ -159,6 +162,33 @@ const SettingsPage = () => {
                     onChange={(e) => setDebitRate(e.target.value)}
                   />
                   <span className="input-group-text">%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Penalty Card */}
+            <div className="col-md-4">
+              <div className="p-3 border rounded-3 bg-light bg-opacity-50 h-100 d-flex flex-column justify-content-between">
+                <div>
+                  <div className="d-flex align-items-center gap-2 text-warning mb-2">
+                    <MdWarning size={24} />
+                    <h5 className="fw-bold mb-0">દંડ રકમ (Penalty Amount)</h5>
+                  </div>
+                  <p className="text-muted small">
+                    સભ્યે ગયા મહિને એન્ટ્રી ના કરાવી હોય, તો ગણાતો દંડ (દા.ત. ₹{penaltyAmt} નક્કી કર્યો હોય, તો ₹{penaltyAmt} દંડ ગણાશે).
+                  </p>
+                </div>
+                <div className="input-group mt-3">
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    className="form-control"
+                    required
+                    value={penaltyAmt}
+                    onChange={(e) => setPenaltyAmt(e.target.value)}
+                  />
+                  <span className="input-group-text">₹</span>
                 </div>
               </div>
             </div>

@@ -7,7 +7,7 @@ exports.getSettings = async (req, res, next) => {
   try {
     let settings = db.prepare('SELECT * FROM settings LIMIT 1').get();
     if (!settings) {
-      const result = db.prepare('INSERT INTO settings (creditInterestRate, debitInterestRate) VALUES (?, ?)').run(1, 1);
+      const result = db.prepare('INSERT INTO settings (creditInterestRate, debitInterestRate, penaltyAmount) VALUES (?, ?, ?)').run(1, 1, 100);
       settings = db.prepare('SELECT * FROM settings WHERE id = ?').get(result.lastInsertRowid);
     }
     res.json({ 
@@ -25,20 +25,22 @@ exports.getSettings = async (req, res, next) => {
 exports.updateSettings = async (req, res, next) => {
   try {
     let settings = db.prepare('SELECT * FROM settings LIMIT 1').get();
-    const { creditInterestRate, debitInterestRate } = req.body;
+    const { creditInterestRate, debitInterestRate, penaltyAmount } = req.body;
 
     if (!settings) {
-      const result = db.prepare('INSERT INTO settings (creditInterestRate, debitInterestRate) VALUES (?, ?)').run(
+      const result = db.prepare('INSERT INTO settings (creditInterestRate, debitInterestRate, penaltyAmount) VALUES (?, ?, ?)').run(
         creditInterestRate !== undefined ? Number(creditInterestRate) : 1,
-        debitInterestRate !== undefined ? Number(debitInterestRate) : 1
+        debitInterestRate !== undefined ? Number(debitInterestRate) : 1,
+        penaltyAmount !== undefined ? Number(penaltyAmount) : 100
       );
       settings = db.prepare('SELECT * FROM settings WHERE id = ?').get(result.lastInsertRowid);
     } else {
       const credit = creditInterestRate !== undefined ? Number(creditInterestRate) : settings.creditInterestRate;
       const debit = debitInterestRate !== undefined ? Number(debitInterestRate) : settings.debitInterestRate;
+      const penalty = penaltyAmount !== undefined ? Number(penaltyAmount) : (settings.penaltyAmount ?? 100);
       
-      db.prepare('UPDATE settings SET creditInterestRate = ?, debitInterestRate = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?')
-        .run(credit, debit, settings.id);
+      db.prepare('UPDATE settings SET creditInterestRate = ?, debitInterestRate = ?, penaltyAmount = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?')
+        .run(credit, debit, penalty, settings.id);
         
       settings = db.prepare('SELECT * FROM settings WHERE id = ?').get(settings.id);
     }

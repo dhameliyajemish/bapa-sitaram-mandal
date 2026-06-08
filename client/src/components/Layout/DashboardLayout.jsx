@@ -45,9 +45,9 @@ const DashboardLayout = () => {
   ];
 
   return (
-    <div className="d-flex min-vh-100">
+    <div className="app-container">
       <style>{`
-        .sidebar { width: 250px; background: linear-gradient(180deg,#1e1b4b 0%,#312e81 100%); flex-shrink:0; }
+        .sidebar { width: var(--sidebar-width); background: linear-gradient(180deg,#1e1b4b 0%,#312e81 100%); flex-shrink:0; }
         .sidebar-brand-icon { width:38px;height:38px;border-radius:10px;background:rgba(99,102,241,.5);display:flex;align-items:center;justify-content:center;color:#fff; }
         .sidebar-brand-sub   { font-size:.7rem;color:#a5b4fc; }
         .sidebar-badge { font-size:.7rem;color:#818cf8; }
@@ -91,7 +91,7 @@ const DashboardLayout = () => {
         </div>
       </nav>
 
-      <div className="flex-grow-1 d-flex flex-column" style={{ marginLeft: '260px' }}>
+      <div className="main-content d-flex flex-column" style={{ minWidth: 0 }}>
         <header className="topbar border-bottom px-4 py-2 d-flex justify-content-between align-items-center">
           <div className="topbar-clock">{time}</div>
           <div className="d-flex align-items-center gap-3">

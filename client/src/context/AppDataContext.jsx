@@ -9,7 +9,7 @@ const API_URL = import.meta.env.DEV ? 'http://localhost:5000/api' : '/api';
 export const AppDataProvider = ({ children }) => {
   const [members, setMembers] = useState([]);
   const [entries, setEntries] = useState([]);
-  const [settings, setSettings] = useState({ creditInterestRate: 1, debitInterestRate: 1 });
+  const [settings, setSettings] = useState({ creditInterestRate: 1, debitInterestRate: 1, penaltyAmount: 100 });
   const token = useSelector(state => state.auth?.token);
 
   const getAuthConfig = () => {
